@@ -1,0 +1,1331 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>DataMaps Map Editor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a drafting workbench. Left is the pan/zoom map surface with its toolbar, right is a tabbed inspector (Marker, Groups, Map, JSON). Stacks on phones. */
+:root{
+  --bg:#e9edf1; --panel:#f7f8fa; --panel2:#e2e7ed; --field:#ffffff;
+  --ink:#16202e; --muted:#5a687a; --line:#cbd3dd;
+  --accent:#0b7a75; --accent-ink:#ffffff; --accent-soft:#d6ecea;
+  --stage:#fbfcfd; --grid:#d5dce4; --grid-strong:#a7b6c6; --label:#5a687a;
+  --danger:#b3261e; --warn:#9a5b00; --info:#2a5f9e; --sel:#e8590c;
+  --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e141b; --panel:#171f29; --panel2:#212b37; --field:#0f161e;
+    --ink:#e4eaf1; --muted:#92a1b3; --line:#2b3745;
+    --accent:#3cc4bb; --accent-ink:#06211f; --accent-soft:#143532;
+    --stage:#0c1218; --grid:#1d2937; --grid-strong:#3a4c61; --label:#8b9bad;
+    --danger:#ff8a80; --warn:#f0b35a; --info:#7ab2f2; --sel:#ff9f43;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e141b; --panel:#171f29; --panel2:#212b37; --field:#0f161e;
+  --ink:#e4eaf1; --muted:#92a1b3; --line:#2b3745;
+  --accent:#3cc4bb; --accent-ink:#06211f; --accent-soft:#143532;
+  --stage:#0c1218; --grid:#1d2937; --grid-strong:#3a4c61; --label:#8b9bad;
+  --danger:#ff8a80; --warn:#f0b35a; --info:#7ab2f2; --sel:#ff9f43;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:13px/1.45 var(--sans);
+  padding-block:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr);gap:10px;padding-block:10px}
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-width:0}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand svg{flex:none;color:var(--accent)}
+.brand h1{margin:0;font-size:16px;font-weight:600;letter-spacing:.01em;text-wrap:balance}
+.chip{font:500 11px var(--mono);padding:2px 7px;border:1px solid var(--line);border-radius:3px;color:var(--muted)}
+.actions{margin-left:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.sep{width:1px;height:20px;background:var(--line);margin:0 4px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:5px 10px;border:1px solid var(--line);background:var(--panel);border-radius:4px;cursor:pointer;line-height:1.3;white-space:nowrap}
+.btn:hover{background:var(--panel2)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{color:var(--danger);border-color:currentColor}
+.btn.icon{padding:5px 7px}
+.btn.small{padding:3px 8px;font-size:12px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+.work{display:grid;grid-template-columns:minmax(0,1fr) 376px;gap:10px;min-height:0}
+.canvas-wrap,.side{display:flex;flex-direction:column;min-height:0;min-width:0;border:1px solid var(--line);border-radius:6px;background:var(--panel);overflow:hidden}
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 8px;border-bottom:1px solid var(--line)}
+.toolbar .grow{flex:1}
+.inl{display:inline-flex;align-items:center;gap:6px;color:var(--muted)}
+.inl select{width:auto;max-width:170px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg button{border:0;background:var(--panel);padding:5px 10px;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+#zoomlbl{font:500 12px var(--mono);min-width:44px;text-align:center;color:var(--muted)}
+
+#vp{position:relative;flex:1;min-height:0;overflow:hidden;touch-action:none;background:var(--bg);cursor:grab;user-select:none;-webkit-user-select:none}
+#vp.add{cursor:crosshair}
+#vp.panning{cursor:grabbing}
+#vp.dropping{outline:2px dashed var(--accent);outline-offset:-6px}
+#stage{position:absolute;left:0;top:0;transform-origin:0 0;box-shadow:0 0 0 1px var(--grid-strong)}
+#bgimg{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;-webkit-user-drag:none}
+#grid{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#mlayer{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+#llayer{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:hidden}
+#llayer .lhit{fill:none;stroke:transparent;stroke-width:14;pointer-events:stroke;cursor:pointer}
+#llayer .vtx{pointer-events:auto;cursor:move;fill:var(--panel);stroke:var(--accent);stroke-width:2.5}
+#llayer .vtx.sel{fill:var(--sel);stroke:var(--sel)}
+#llayer .mid{pointer-events:auto;cursor:copy;fill:var(--accent);opacity:.55}
+#llayer .mid:hover{opacity:1}
+#vp.line{cursor:crosshair}
+.mk{position:absolute;left:0;top:0;width:0;height:0;pointer-events:auto;cursor:pointer}
+.mk>*{position:absolute;display:block}
+.mk .pin{filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
+.mk .dot{border-radius:50%;box-sizing:border-box}
+.mk .ico{display:grid;place-items:center;border:1.5px dashed var(--muted);background:var(--panel);color:var(--muted);font:600 11px var(--mono);border-radius:4px;box-sizing:border-box}
+.mk img.ico-img{object-fit:contain;image-rendering:auto}
+.mk.sel .pin{filter:drop-shadow(0 0 0 var(--sel)) drop-shadow(0 0 3px var(--sel)) drop-shadow(0 0 3px var(--sel))}
+.mk.sel .dot,.mk.sel .ico,.mk.sel .ico-img{outline:2px solid var(--sel);outline-offset:2px}
+#readout{position:absolute;left:8px;bottom:8px;font:500 11px var(--mono);padding:3px 7px;background:var(--panel);border:1px solid var(--line);border-radius:3px;color:var(--muted);pointer-events:none}
+#hint{position:absolute;right:8px;bottom:8px;max-width:min(300px,calc(100% - 190px));padding:5px 10px;background:var(--panel);border:1px solid var(--line);border-radius:4px;color:var(--muted);font-size:12px;text-align:right;pointer-events:none}
+
+.tabs{display:flex;border-bottom:1px solid var(--line);background:var(--panel2)}
+.tabs button{flex:1;border:0;background:transparent;padding:9px 6px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;font-weight:500;position:relative}
+.tabs button[aria-selected="true"]{color:var(--ink);background:var(--panel);border-bottom-color:var(--accent)}
+.badge{display:inline-block;min-width:16px;padding:0 4px;margin-left:4px;border-radius:8px;background:var(--warn);color:var(--panel);font:600 10px/16px var(--mono);text-align:center}
+.tabpanel{flex:1;min-height:0;overflow:auto;padding:12px}
+.tabpanel[hidden]{display:none}
+
+.f{display:grid;gap:3px;margin-bottom:10px;min-width:0}
+.f>span,.lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.f small{color:var(--muted);font-size:11px}
+input[type=text],input[type=number],input[type=search],select,textarea{width:100%;min-width:0;background:var(--field);border:1px solid var(--line);border-radius:4px;padding:5px 7px}
+input[type=color]{width:36px;height:28px;padding:1px;border:1px solid var(--line);border-radius:4px;background:var(--field);cursor:pointer}
+textarea{resize:vertical;font-family:var(--mono);font-size:12px;tab-size:2}
+input[type=checkbox]{accent-color:var(--accent);margin:0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chk{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.inline{display:flex;gap:6px;align-items:center}
+.sechead{display:flex;align-items:center;justify-content:space-between;margin:16px 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.sechead:first-child{margin-top:0}
+.empty{color:var(--muted);margin:4px 0 10px}
+.mk-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.mk-head b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sw{flex:none;width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,.35);background:var(--muted)}
+.sw.sq{border-radius:3px;border-style:dashed}
+.btnrow{display:flex;gap:6px;flex-wrap:wrap}
+
+.list{display:grid;gap:2px;max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:4px;background:var(--field);margin-top:6px}
+.list .row{display:flex;align-items:center;gap:8px;border:0;background:transparent;padding:5px 8px;text-align:left;cursor:pointer;min-width:0}
+.list .row:hover{background:var(--panel2)}
+.list .row[aria-current="true"]{background:var(--accent-soft)}
+.list .row b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.list .row code,.mono{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.list .more{padding:6px 8px;color:var(--muted);font-size:12px}
+
+.gcard{border:1px solid var(--line);border-radius:5px;margin-bottom:8px;background:var(--field);overflow:hidden}
+.gcard.active{border-color:var(--accent)}
+.ghead{display:flex;align-items:center;gap:8px;padding:6px 8px;cursor:pointer;min-width:0}
+.ghead .gname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.ghead .gcount{font:500 11px var(--mono);color:var(--muted)}
+.eye{border:0;background:transparent;padding:2px;cursor:pointer;color:var(--ink);display:grid;place-items:center}
+.eye[aria-pressed="false"]{color:var(--muted);opacity:.6}
+.geditor{padding:10px;border-top:1px solid var(--line);background:var(--panel)}
+.colorrow{display:flex;align-items:center;gap:8px}
+.colorrow code{font-family:var(--mono);font-size:11px;color:var(--muted)}
+
+.warns{display:grid;gap:4px;margin-bottom:12px}
+.warn{display:flex;gap:8px;padding:6px 8px;border:1px solid var(--line);border-left-width:3px;border-radius:3px;background:var(--field);font-size:12px}
+.warn.w{border-left-color:var(--warn)} .warn.e{border-left-color:var(--danger)} .warn.i{border-left-color:var(--info)}
+.warn.ok{border-left-color:var(--accent)}
+#out,#in{width:100%;min-height:200px;white-space:pre;overflow:auto;font-size:11.5px;line-height:1.5}
+#in{min-height:110px}
+.err{color:var(--danger);font-size:12px;margin:6px 0 0;white-space:pre-wrap}
+.note{font-size:12px;color:var(--muted);margin:0 0 10px}
+code.k{font-family:var(--mono);font-size:11.5px;background:var(--panel2);padding:0 4px;border-radius:3px}
+
+#toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);opacity:0;pointer-events:none;background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:5px;font-size:13px;transition:opacity .18s,transform .18s;z-index:30;max-width:calc(100% - 32px)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+
+@media (max-width:860px){
+  html,body{height:auto}
+  .app{height:auto;min-height:100%;grid-template-rows:auto auto}
+  .work{grid-template-columns:minmax(0,1fr)}
+  .canvas-wrap{height:auto}
+  #vp{flex:none;height:56vh;min-height:300px}
+  .side{overflow:visible}
+  .tabpanel{overflow:visible}
+  .list{max-height:260px}
+  .actions{margin-left:0}
+}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 1.5v6M12 16.5v6M1.5 12h6M16.5 12h6"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg>
+      <h1>DataMaps Map Editor</h1>
+      <span class="chip">format v16</span>
+    </div>
+    <div class="actions">
+      <button class="btn" id="b-new" type="button">New map</button>
+      <button class="btn" id="b-ex" type="button">Load example</button>
+      <span class="sep"></span>
+      <button class="btn icon" id="b-undo" type="button" aria-label="Undo" title="Undo (Ctrl+Z)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 3 2.5 6l3 3"/><path d="M2.5 6h6.5a4 4 0 0 1 0 8H6"/></svg></button>
+      <button class="btn icon" id="b-redo" type="button" aria-label="Redo" title="Redo (Ctrl+Shift+Z)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 3 3 3-3 3"/><path d="M13.5 6H7a4 4 0 0 0 0 8h3"/></svg></button>
+      <button class="btn primary" id="b-copy" type="button">Copy JSON</button>
+    </div>
+  </header>
+
+  <main class="work">
+    <section class="canvas-wrap" aria-label="Map surface">
+      <div class="toolbar">
+        <div class="seg" role="group" aria-label="Tool">
+          <button type="button" id="t-select" aria-pressed="true" title="Select and move markers (Esc)">Select</button>
+          <button type="button" id="t-add" aria-pressed="false" title="Click the map to add a marker (A)">Add marker</button>
+          <button type="button" id="t-line" aria-pressed="false" title="Click to place line points. Double-click or Enter to finish (L)">Draw line</button>
+        </div>
+        <label class="inl">to <select id="active-group" aria-label="Group for new markers"></select></label>
+        <label class="inl">Snap <select id="snap" aria-label="Snap to grid"><option value="0">off</option><option value="1">1</option><option value="5">5</option><option value="10">10</option></select></label>
+        <label class="inl"><input type="checkbox" id="show-grid" checked> Grid</label>
+        <span class="grow"></span>
+        <button class="btn small" id="z-out" type="button" aria-label="Zoom out">−</button>
+        <span id="zoomlbl">100%</span>
+        <button class="btn small" id="z-in" type="button" aria-label="Zoom in">+</button>
+        <button class="btn small" id="z-fit" type="button" title="Fit map to view (F)">Fit</button>
+      </div>
+      <div id="vp">
+        <div id="stage"><img id="bgimg" alt="" hidden></div>
+        <canvas id="grid"></canvas>
+        <svg id="llayer" aria-hidden="true"></svg>
+        <div id="mlayer"></div>
+        <div id="hint">No background image. Drop one here, or load a preview under Map.</div>
+        <div id="readout">x – y –</div>
+      </div>
+    </section>
+
+    <aside class="side">
+      <div class="tabs" role="tablist" aria-label="Inspector">
+        <button type="button" role="tab" id="tab-marker" aria-selected="true" data-tab="marker">Marker</button>
+        <button type="button" role="tab" id="tab-groups" aria-selected="false" data-tab="groups">Groups</button>
+        <button type="button" role="tab" id="tab-lines" aria-selected="false" data-tab="lines">Lines</button>
+        <button type="button" role="tab" id="tab-map" aria-selected="false" data-tab="map">Map</button>
+        <button type="button" role="tab" id="tab-json" aria-selected="false" data-tab="json">JSON<span class="badge" id="warn-badge" hidden>0</span></button>
+      </div>
+
+      <div class="tabpanel" id="p-marker" role="tabpanel" aria-labelledby="tab-marker">
+        <div id="mk-form"></div>
+        <div class="sechead"><span>All markers</span><span id="mk-total" class="mono"></span></div>
+        <input type="search" id="mk-filter" placeholder="Filter by name, id or group" aria-label="Filter markers">
+        <div id="mk-list" class="list"></div>
+      </div>
+
+      <div class="tabpanel" id="p-groups" role="tabpanel" aria-labelledby="tab-groups" hidden>
+        <p class="note">Every marker belongs to one group. Groups appear in the map legend, and each group uses one style.</p>
+        <div class="btnrow" style="margin-bottom:10px"><button class="btn" id="g-add" type="button">Add group</button></div>
+        <div id="groups"></div>
+        <input type="file" id="icon-file" accept="image/*" hidden>
+      </div>
+
+      <div class="tabpanel" id="p-lines" role="tabpanel" aria-labelledby="tab-lines" hidden>
+        <p class="note">Lines are saved as polyline overlays on the background, using the coordinate system you set. Use them for train lines, roads or borders. Points snap to nearby markers, so a line can run through stations.</p>
+        <div id="l-warn" class="note" hidden>This map has multiple backgrounds. Their overlays are kept in the JSON but can't be edited here.</div>
+        <div class="btnrow" style="margin-bottom:10px"><button class="btn" id="l-new" type="button">Draw new line</button></div>
+        <div id="l-list" class="list" style="margin-top:0;margin-bottom:12px"></div>
+        <div id="l-edit"></div>
+      </div>
+
+      <div class="tabpanel" id="p-map" role="tabpanel" aria-labelledby="tab-map" hidden>
+        <div class="sechead"><span>Schema</span></div>
+        <label class="f"><span>$schema URL</span><input type="text" id="schema" spellcheck="false"><small>Defaults to dovedale.wiki. Edit it if your extension path differs.</small></label>
+
+        <div class="sechead"><span>Background</span></div>
+        <label class="f"><span>Image file name on the wiki</span><input type="text" id="bg-image" placeholder="e.g. Throne World map.jpg" spellcheck="false"></label>
+        <div class="btnrow" style="margin-bottom:10px">
+          <button class="btn" id="bg-pick" type="button">Load preview image…</button>
+          <button class="btn" id="bg-clear" type="button">Remove</button>
+        </div>
+        <input type="file" id="bg-file" accept="image/*" hidden>
+        <p class="note">The preview stays in this browser. Only the file name goes into the JSON, so upload the same image to your wiki.</p>
+        <label class="chk"><input type="checkbox" id="bg-pix"> Pixelated (keep pixel art sharp)</label>
+        <div id="bg-extra" class="note" hidden></div>
+
+        <div class="sechead"><span>Coordinate system</span></div>
+        <label class="chk"><input type="checkbox" id="crs-default"> Use the wiki default (0–100, Y grows upward)</label>
+        <div class="f"><span>Axis order</span>
+          <select id="crs-order"><option value="latlon">latlon: [Y, X]</option><option value="yx">yx: [Y, X]</option><option value="xy">xy: [X, Y]</option></select>
+        </div>
+        <div class="row2">
+          <label class="f"><span id="l-tl-a">topLeft Y</span><input type="number" step="any" id="crs-tl-a"></label>
+          <label class="f"><span id="l-tl-b">topLeft X</span><input type="number" step="any" id="crs-tl-b"></label>
+          <label class="f"><span id="l-br-a">bottomRight Y</span><input type="number" step="any" id="crs-br-a"></label>
+          <label class="f"><span id="l-br-b">bottomRight X</span><input type="number" step="any" id="crs-br-b"></label>
+        </div>
+        <div class="btnrow" style="margin-bottom:6px">
+          <button class="btn small" id="pre-up" type="button">0–100, Y up</button>
+          <button class="btn small" id="pre-down" type="button">0–100, Y down</button>
+          <button class="btn small" id="pre-px" type="button">Image pixels</button>
+        </div>
+        <p class="note">The corners are the real corners of the image. If topLeft has the larger Y, Y grows upward. Changing them moves markers visually, not numerically.</p>
+
+        <div class="sechead"><span>Settings</span></div>
+        <div class="f"><span>Backdrop color</span>
+          <div class="colorrow"><input type="color" id="bd-color" value="#0b120d"><code id="bd-val">none</code><button class="btn small" id="bd-clear" type="button">Clear</button></div>
+        </div>
+        <label class="chk"><input type="checkbox" id="show-coords"> Show cursor coordinates on the wiki</label>
+      </div>
+
+      <div class="tabpanel" id="p-json" role="tabpanel" aria-labelledby="tab-json" hidden>
+        <div class="sechead"><span>Checks</span></div>
+        <div class="warns" id="warns"></div>
+        <div class="sechead"><span>Map source</span><button class="btn small" id="out-copy" type="button">Copy</button></div>
+        <textarea id="out" readonly spellcheck="false" aria-label="Generated JSON"></textarea>
+        <p class="note" style="margin-top:8px">Paste this into the <code class="k">Map:</code> page's source editor.</p>
+        <div class="sechead"><span>Load existing JSON</span></div>
+        <textarea id="in" spellcheck="false" placeholder="Paste a DataMaps JSON document here to edit it" aria-label="JSON to load"></textarea>
+        <div class="btnrow" style="margin-top:6px"><button class="btn" id="b-load" type="button">Load JSON</button></div>
+        <div class="err" id="in-err"></div>
+      </div>
+    </aside>
+  </main>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const rnd = n => Math.round(n * 1000) / 1000;
+const ID_RE = /^[A-Za-z0-9_-]+$/;
+const SCHEMA = 'https://dovedale.wiki/extensions/DataMaps/schemas/v17.json';
+const PALETTE = ['#7c5cd6','#e07b39','#2a9d8f','#d94f70','#3d7be0','#8a9a1b','#c58a00','#5b6b7c'];
+const KNOWN_TOP = ['$schema','crs','background','backgrounds','settings','groups','markers'];
+
+/* ---------- document model ---------- */
+const defaultCrs = () => ({ order: 'latlon', topLeft: [100, 0], bottomRight: [0, 100] });
+const blankDoc = () => ({
+  $schema: SCHEMA, crs: defaultCrs(), useDefaultCrs: true,
+  background: { image: '' }, settings: { backdropColor: '', showCoordinates: true },
+  groups: {}, markers: {}, lines: [], otherOverlays: [], extra: {}
+});
+function exampleDoc() {
+  const d = blankDoc();
+  d.groups = {
+    landmarks: { name: 'Landmarks', pinColor: '#7c5cd6', size: 32, article: 'Landmarks' },
+    patrols: { name: 'Patrol route', fillColor: '#e07b39', size: 6, strokeWidth: 1 },
+    shops: { name: 'Shops', icon: 'Shop icon.png', size: [28, 28] }
+  };
+  d.markers = {
+    landmarks: [
+      { id: 'old-lighthouse', x: 22, y: 71, name: 'Old lighthouse', description: 'Visible from the south coast.\nThe lamp room is locked.', article: 'Old lighthouse' },
+      { x: 58, y: 44, name: 'Hollow Spire' },
+      { x: 81, y: 83, name: 'Ferry dock' }
+    ],
+    patrols: [{ x: 35, y: 30 }, { x: 42, y: 33 }, { x: 50, y: 36.5 }, { x: 57, y: 35 }],
+    shops: [{ x: 66, y: 60, name: 'Trading post' }]
+  };
+  d.lines = [{ name: 'Coast line', color: '#e0453a', pts: [[22, 71], [58, 44], [66, 60], [81, 83]] }];
+  return d;
+}
+let doc = exampleDoc();
+
+const ui = {
+  selL: null, selV: null, lineOpen: false, cur: null, armLine: null,
+  sel: null, active: null, tool: 'select', hidden: new Set(), exp: null, armDel: null,
+  k: 1, tx: 0, ty: 0, imgs: {}, snap: 0, grid: true, tab: 'marker', fitted: false, iconFor: null
+};
+const vp = $('#vp'), stage = $('#stage'), bgimg = $('#bgimg'), mlayer = $('#mlayer'), gridc = $('#grid');
+
+/* ---------- coordinates ---------- */
+function bounds() {
+  const c = doc.crs, tl = c.topLeft, br = c.bottomRight;
+  return c.order === 'xy'
+    ? { x0: tl[0], y0: tl[1], x1: br[0], y1: br[1] }
+    : { y0: tl[0], x0: tl[1], y1: br[0], x1: br[1] };
+}
+function bgPreview() {
+  const name = doc.background.image || (doc.extra.backgrounds && doc.extra.backgrounds[0] && doc.extra.backgrounds[0].image);
+  return (name && ui.imgs[name]) || null;
+}
+function view() {
+  const b = bounds(); const im = bgPreview();
+  const dx = (b.x1 - b.x0) || 1, dy = (b.y1 - b.y0) || 1;
+  let W, H;
+  if (im) { W = im.w; H = im.h; }
+  else { const a = Math.abs(dx / dy); if (a >= 1) { W = 1000; H = 1000 / a; } else { H = 1000; W = 1000 * a; } }
+  return { b, dx, dy, W, H };
+}
+const toScreen = (v, x, y) => ({ sx: ui.tx + (x - v.b.x0) / v.dx * v.W * ui.k, sy: ui.ty + (y - v.b.y0) / v.dy * v.H * ui.k });
+const fromScreen = (v, sx, sy) => ({ x: v.b.x0 + (sx - ui.tx) / (v.W * ui.k) * v.dx, y: v.b.y0 + (sy - ui.ty) / (v.H * ui.k) * v.dy });
+const snapv = n => ui.snap ? Math.round(n / ui.snap) * ui.snap : n;
+
+/* ---------- groups and markers helpers ---------- */
+const gStyle = g => ('icon' in g) ? 'icon' : ('pinColor' in g ? 'pin' : 'circle');
+function hex6(c, def = '#888888') {
+  if (typeof c !== 'string') return def;
+  c = c.trim();
+  if (/^#[0-9a-f]{6}$/i.test(c)) return c.toLowerCase();
+  const m = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/i.exec(c);
+  return m ? ('#' + m[1] + m[1] + m[2] + m[2] + m[3] + m[3]).toLowerCase() : def;
+}
+const groupColor = g => hex6(g.pinColor || g.fillColor, '#888888');
+const curMarker = () => ui.sel && doc.markers[ui.sel.g] && doc.markers[ui.sel.g][ui.sel.i] || null;
+function sizeWH(g) {
+  const s = g.size;
+  if (Array.isArray(s)) return [Number(s[0]) || 32, Number(s[1]) || 32];
+  return [Number(s) || 32, Number(s) || 32];
+}
+function nextGroupId() { let n = 1; while (doc.groups['group-' + n]) n++; return 'group-' + n; }
+
+/* ---------- history ---------- */
+const hist = { stack: [], i: -1, timer: null };
+const DRAFT = 'datamaps-editor-draft-v1';
+function pushHist() {
+  clearTimeout(hist.timer); hist.timer = null;
+  const s = JSON.stringify(doc);
+  if (hist.stack[hist.i] !== s) {
+    hist.stack = hist.stack.slice(0, hist.i + 1); hist.stack.push(s);
+    if (hist.stack.length > 100) hist.stack.shift();
+    hist.i = hist.stack.length - 1;
+    try { localStorage.setItem(DRAFT, s); } catch (e) {}
+  }
+  updateUndoBtns();
+}
+function scheduleHist() { clearTimeout(hist.timer); hist.timer = setTimeout(pushHist, 450); updateUndoBtns(); }
+function updateUndoBtns() { $('#b-undo').disabled = !(hist.i > 0 || hist.timer); $('#b-redo').disabled = !(hist.i < hist.stack.length - 1 && !hist.timer); }
+function restore(s) {
+  doc = JSON.parse(s);
+  if (ui.sel && !curMarker()) ui.sel = null;
+  if (ui.selL != null && !doc.lines[ui.selL]) { ui.selL = null; ui.selV = null; ui.lineOpen = false; }
+  else if (ui.selL != null && ui.selV != null && !doc.lines[ui.selL].pts[ui.selV]) ui.selV = null;
+  if (!doc.groups[ui.active]) ui.active = Object.keys(doc.groups)[0] || null;
+  renderAll();
+}
+function undo() { if (hist.timer) pushHist(); if (hist.i > 0) { hist.i--; restore(hist.stack[hist.i]); updateUndoBtns(); } }
+function redo() { if (hist.i < hist.stack.length - 1) { hist.i++; restore(hist.stack[hist.i]); updateUndoBtns(); } }
+
+/* ---------- export ---------- */
+function orderKeys(obj, first) {
+  const out = {};
+  first.forEach(k => { if (k in obj) out[k] = obj[k]; });
+  Object.keys(obj).forEach(k => { if (!(k in out)) out[k] = obj[k]; });
+  return out;
+}
+function exportGroup(g) {
+  const o = {};
+  const st = gStyle(g);
+  for (const [k, v] of Object.entries(g)) {
+    if (v === '' || v === undefined) continue;
+    if (k === 'isDefault' && v === true) continue;
+    if ((k === 'canSearchFor' || k === 'isCollectible' || k === 'wantsChecklistNumbering') && v === false) continue;
+    if (k === 'strokeWidth' && Number(v) === 1) continue;
+    if (k === 'size') {
+      const [w, h] = sizeWH(g);
+      if (st === 'icon') { if (!(w === 32 && h === 32)) o.size = (w === h && !Array.isArray(g.size)) ? w : [w, h]; }
+      else if (st === 'pin') { if (w !== 32) o.size = w; }
+      else if (w !== 5) o.size = w;
+      continue;
+    }
+    o[k] = v;
+  }
+  return orderKeys(o, ['name', 'description', 'icon', 'pinColor', 'fillColor', 'strokeColor', 'strokeWidth', 'size', 'article', 'isDefault', 'isCollectible', 'canSearchFor']);
+}
+function exportMarker(m) {
+  const o = {};
+  for (const [k, v] of Object.entries(m)) {
+    if (v === '' || v === undefined || v === null) continue;
+    if (k === 'x' || k === 'y') { o[k] = rnd(Number(v) || 0); continue; }
+    if (k === 'description') {
+      const lines = String(v).split('\n').map(s => s.trim()).filter(Boolean);
+      if (!lines.length) continue;
+      o.description = lines.length === 1 ? lines[0] : lines;
+      continue;
+    }
+    o[k] = v;
+  }
+  if (!('x' in o)) o.x = 0;
+  if (!('y' in o)) o.y = 0;
+  return orderKeys(o, ['id', 'x', 'y', 'name', 'description', 'image', 'article', 'icon']);
+}
+function exportLines() {
+  const xy = doc.crs.order === 'xy';
+  return (doc.lines || []).filter(L => L.pts.length >= 2).map(L => {
+    const o = { path: L.pts.map(p => xy ? [rnd(p[0]), rnd(p[1])] : [rnd(p[1]), rnd(p[0])]) };
+    const hx = hex6(L.color, '#e0453a');
+    const c = L.rawColor !== undefined ? L.rawColor : [1, 3, 5].map(i => parseInt(hx.slice(i, i + 2), 16));
+    o.color = c;
+    if (L.name) o.name = L.name;
+    return o;
+  });
+}
+function buildOutput() {
+  const out = {};
+  if (doc.$schema) out.$schema = doc.$schema;
+  if (!doc.useDefaultCrs) {
+    const c = doc.crs;
+    out.crs = orderKeys({ order: c.order, topLeft: c.topLeft, bottomRight: c.bottomRight, ...(c.rotation !== undefined ? { rotation: c.rotation } : {}) }, ['order', 'topLeft', 'bottomRight', 'rotation']);
+  }
+  const bg = doc.background || {};
+  const bgKeys = Object.keys(bg).filter(k => bg[k] !== '' && bg[k] !== undefined && !(k === 'pixelated' && bg[k] === false));
+  if (!doc.extra.backgrounds) {
+    const o = Object.fromEntries(bgKeys.map(k => [k, bg[k]]));
+    const ov = [...exportLines(), ...(doc.otherOverlays || [])];
+    if (ov.length && (o.image || o.tiles)) o.overlays = ov;
+    const ks = Object.keys(o);
+    if (ks.length === 1 && ks[0] === 'image') out.background = o.image;
+    else if (ks.length) out.background = orderKeys(o, ['image', 'at', 'pixelated', 'associatedLayer', 'overlays']);
+  }
+  const s = {};
+  if (doc.settings.backdropColor) s.backdropColor = doc.settings.backdropColor;
+  if (doc.settings.showCoordinates === false) s.showCoordinates = false;
+  for (const [k, v] of Object.entries(doc.settings)) if (!['backdropColor', 'showCoordinates'].includes(k)) s[k] = v;
+  if (Object.keys(s).length) out.settings = s;
+  const groups = {};
+  for (const [id, g] of Object.entries(doc.groups)) groups[id] = exportGroup(g);
+  if (Object.keys(groups).length) out.groups = groups;
+  const markers = {};
+  const keys = [...Object.keys(doc.groups), ...Object.keys(doc.markers).filter(k => !(k in doc.groups))];
+  for (const id of keys) {
+    const arr = (doc.markers[id] || []).map(exportMarker);
+    if (arr.length) markers[id] = arr;
+  }
+  if (Object.keys(markers).length) out.markers = markers;
+  for (const [k, v] of Object.entries(doc.extra)) out[k] = v;
+  return out;
+}
+const currentJSON = () => JSON.stringify(buildOutput(), null, '\t');
+
+/* ---------- import ---------- */
+function importDoc(obj) {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) throw new Error('The JSON must be an object with groups and markers.');
+  obj = JSON.parse(JSON.stringify(obj));
+  const d = blankDoc();
+  d.$schema = typeof obj.$schema === 'string' ? obj.$schema : '';
+  if (obj.crs && typeof obj.crs === 'object') {
+    const num = (p, def) => Array.isArray(p) && p.length === 2 && p.every(n => typeof n === 'number') ? p : def;
+    d.crs = { ...obj.crs,
+      order: ['latlon', 'yx', 'xy'].includes(obj.crs.order) ? obj.crs.order : 'latlon',
+      topLeft: num(obj.crs.topLeft, [0, 0]), bottomRight: num(obj.crs.bottomRight, [100, 100]) };
+    d.useDefaultCrs = false;
+  }
+  if (typeof obj.background === 'string') d.background = { image: obj.background };
+  else if (obj.background && typeof obj.background === 'object') d.background = obj.background;
+  if (Array.isArray(d.background.overlays)) {
+    const xy = d.crs.order === 'xy';
+    d.background.overlays.forEach(o => {
+      if (o && Array.isArray(o.path)) {
+        const pts = o.path.filter(p => Array.isArray(p) && p.length === 2 && p.every(n => typeof n === 'number')).map(p => xy ? [p[0], p[1]] : [p[1], p[0]]);
+        const arr = Array.isArray(o.color) && o.color.length >= 3 && o.color.slice(0, 3).every(n => typeof n === 'number');
+        const L = { name: o.name || '', color: typeof o.color === 'string' ? o.color : arr ? '#' + o.color.slice(0, 3).map(n => clamp(Math.round(n), 0, 255).toString(16).padStart(2, '0')).join('') : '#e0453a', pts };
+        if (o.color !== undefined && typeof o.color !== 'string' && o.color.length !== 3) L.rawColor = o.color;
+        d.lines.push(L);
+      } else d.otherOverlays.push(o);
+    });
+  }
+  delete d.background.overlays;
+  if (Array.isArray(obj.backgrounds)) d.extra.backgrounds = obj.backgrounds;
+  if (obj.settings && typeof obj.settings === 'object') d.settings = { backdropColor: '', showCoordinates: true, ...obj.settings };
+  if (obj.groups) {
+    if (typeof obj.groups !== 'object' || Array.isArray(obj.groups)) throw new Error('"groups" must be an object keyed by group ID.');
+    d.groups = obj.groups;
+    for (const g of Object.values(d.groups)) { if (Array.isArray(g.description)) g.description = g.description.join('\n'); }
+  }
+  if (obj.markers) {
+    if (typeof obj.markers !== 'object' || Array.isArray(obj.markers)) throw new Error('"markers" must be an object keyed by group ID.');
+    for (const [gid, arr] of Object.entries(obj.markers)) {
+      if (!Array.isArray(arr)) throw new Error('Markers for "' + gid + '" must be an array.');
+      d.markers[gid] = arr.map(m => {
+        m = { ...m };
+        if (!('y' in m) && 'lat' in m) { m.y = m.lat; delete m.lat; }
+        if (!('x' in m) && 'lon' in m) { m.x = m.lon; delete m.lon; }
+        m.x = Number(m.x) || 0; m.y = Number(m.y) || 0;
+        if (Array.isArray(m.description)) m.description = m.description.join('\n');
+        return m;
+      });
+    }
+  }
+  for (const [k, v] of Object.entries(obj)) if (!KNOWN_TOP.includes(k)) d.extra[k] = v;
+  return d;
+}
+
+/* ---------- validation ---------- */
+function validate() {
+  const w = [];
+  const b = bounds();
+  if (b.x0 === b.x1 || b.y0 === b.y1) w.push(['e', 'The coordinate system has zero width or height. Change topLeft or bottomRight.']);
+  if (!doc.$schema) w.push(['e', '$schema is required.']);
+  else if (/yourWikiDomain/.test(doc.$schema)) w.push(['w', 'Replace yourWikiDomain in $schema with your wiki.']);
+  if (!doc.background.image && !doc.extra.backgrounds && !doc.background.tiles) w.push(['i', 'No background image is set. The map will show only the backdrop.']);
+  const ids = {};
+  for (const [id, g] of Object.entries(doc.groups)) {
+    if (!ID_RE.test(id)) w.push(['e', 'Group ID "' + id + '" may only use letters, digits, dashes and underscores.']);
+    if (!g.name) w.push(['e', 'Group "' + id + '" needs a name.']);
+    if (gStyle(g) === 'icon' && !g.icon) w.push(['e', 'Group "' + id + '" uses icons but has no icon file name.']);
+  }
+  for (const [gid, arr] of Object.entries(doc.markers)) {
+    if (!(gid in doc.groups) && arr.length) w.push(['e', arr.length + ' marker(s) belong to "' + gid + '", which is not a group.']);
+    let out = 0;
+    arr.forEach(m => {
+      if (m.id !== undefined && m.id !== '') { ids[m.id] = (ids[m.id] || 0) + 1; }
+      const x = Number(m.x), y = Number(m.y);
+      if (x < Math.min(b.x0, b.x1) || x > Math.max(b.x0, b.x1) || y < Math.min(b.y0, b.y1) || y > Math.max(b.y0, b.y1)) out++;
+    });
+    if (out) w.push(['w', out + ' marker(s) in "' + gid + '" sit outside the coordinate system.']);
+  }
+  for (const [id, n] of Object.entries(ids)) if (n > 1) w.push(['w', 'Marker ID "' + id + '" is used ' + n + ' times.']);
+  const short = (doc.lines || []).filter(L => L.pts.length < 2).length;
+  if (short) w.push(['w', short + ' line(s) have fewer than 2 points and are left out of the JSON.']);
+  if ((doc.lines || []).length && !doc.background.image) w.push(['e', 'Lines are stored inside the background, so a background image file name is required. Without one, the lines are left out of the JSON.']);
+  return w;
+}
+
+/* ---------- rendering: map ---------- */
+function render() {
+  const v = view();
+  stage.style.width = v.W + 'px'; stage.style.height = v.H + 'px';
+  stage.style.transform = 'translate(' + ui.tx + 'px,' + ui.ty + 'px) scale(' + ui.k + ')';
+  stage.style.background = doc.settings.backdropColor || 'var(--stage)';
+  const im = bgPreview();
+  if (im) {
+    bgimg.hidden = false;
+    if (bgimg.getAttribute('src') !== im.url) bgimg.src = im.url;
+    bgimg.style.imageRendering = doc.background.pixelated ? 'pixelated' : 'auto';
+  } else { bgimg.hidden = true; bgimg.removeAttribute('src'); }
+  $('#hint').hidden = !!im;
+  $('#zoomlbl').textContent = Math.round(ui.k * 100) + '%';
+  renderGrid(v);
+  renderLines(v);
+  renderMarkers(v);
+}
+function niceStep(raw) {
+  const p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p;
+  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p;
+}
+function renderGrid(v) {
+  v = v || view();
+  const r = vp.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  const w = Math.round(r.width * dpr), h = Math.round(r.height * dpr);
+  if (gridc.width !== w || gridc.height !== h) { gridc.width = w; gridc.height = h; }
+  const ctx = gridc.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, r.width, r.height);
+  if (!ui.grid) return;
+  const cs = getComputedStyle(document.documentElement);
+  const cMinor = cs.getPropertyValue('--grid').trim(), cMajor = cs.getPropertyValue('--grid-strong').trim(), cLabel = cs.getPropertyValue('--label').trim(), cHalo = cs.getPropertyValue('--stage').trim();
+  const left = ui.tx, top = ui.ty, right = ui.tx + v.W * ui.k, bottom = ui.ty + v.H * ui.k;
+  const vt = Math.max(top, 0), vb = Math.min(bottom, r.height), vl = Math.max(left, 0), vr = Math.min(right, r.width);
+  if (vb <= vt || vr <= vl) return;
+  const ppx = Math.abs(v.W * ui.k / v.dx), ppy = Math.abs(v.H * ui.k / v.dy);
+  const sx = niceStep(90 / ppx), sy = niceStep(90 / ppy);
+  const p0 = fromScreen(v, vl, vt), p1 = fromScreen(v, vr, vb);
+  const xmin = Math.min(p0.x, p1.x), xmax = Math.max(p0.x, p1.x), ymin = Math.min(p0.y, p1.y), ymax = Math.max(p0.y, p1.y);
+  const decx = Math.max(0, -Math.floor(Math.log10(sx))), decy = Math.max(0, -Math.floor(Math.log10(sy)));
+  ctx.lineWidth = 1; ctx.font = '500 10px "IBM Plex Mono",monospace'; ctx.textBaseline = 'top';
+  const lines = [];
+  const minor = (step, ppu, lo, hi, vertical) => {
+    const ms = step / 5; if (ms * ppu < 14) return;
+    ctx.strokeStyle = cMinor; ctx.globalAlpha = .55; ctx.beginPath();
+    for (let i = Math.ceil(lo / ms); i <= Math.floor(hi / ms); i++) {
+      if (i % 5 === 0) continue;
+      const s = vertical ? toScreen(v, i * ms, 0).sx : toScreen(v, 0, i * ms).sy;
+      const q = Math.round(s) + .5;
+      if (vertical) { ctx.moveTo(q, vt); ctx.lineTo(q, vb); } else { ctx.moveTo(vl, q); ctx.lineTo(vr, q); }
+    }
+    ctx.stroke(); ctx.globalAlpha = 1;
+  };
+  minor(sx, ppx, xmin, xmax, true); minor(sy, ppy, ymin, ymax, false);
+  ctx.strokeStyle = cMajor; ctx.globalAlpha = .8; ctx.beginPath();
+  for (let i = Math.ceil(xmin / sx); i <= Math.floor(xmax / sx); i++) {
+    const s = Math.round(toScreen(v, i * sx, 0).sx) + .5; ctx.moveTo(s, vt); ctx.lineTo(s, vb); lines.push(['x', s, rnd(i * sx).toFixed(decx)]);
+  }
+  for (let i = Math.ceil(ymin / sy); i <= Math.floor(ymax / sy); i++) {
+    const s = Math.round(toScreen(v, 0, i * sy).sy) + .5; ctx.moveTo(vl, s); ctx.lineTo(vr, s); lines.push(['y', s, rnd(i * sy).toFixed(decy)]);
+  }
+  ctx.stroke(); ctx.globalAlpha = 1;
+  ctx.lineWidth = 3; ctx.lineJoin = 'round';
+  for (const [t, s, txt] of lines) {
+    const x = t === 'x' ? s + 3 : vl + 4, y = t === 'x' ? vt + 3 : s + 2;
+    ctx.strokeStyle = cHalo; ctx.strokeText(txt, x, y); ctx.fillStyle = cLabel; ctx.fillText(txt, x, y);
+  }
+}
+function shapeHTML(g) {
+  const st = gStyle(g), size = sizeWH(g);
+  if (st === 'pin') {
+    const h = clamp(size[0], 14, 64), w = h * .75;
+    return '<svg class="pin" width="' + w + '" height="' + h + '" viewBox="0 0 24 32" style="left:' + (-w / 2) + 'px;top:' + (-h) + 'px"><path d="M12 .8C5.8.8.8 5.7.8 11.8.8 20 12 31.2 12 31.2S23.2 20 23.2 11.8C23.2 5.7 18.2.8 12 .8z" fill="' + esc(g.pinColor || '#888') + '" stroke="rgba(0,0,0,.45)" stroke-width="1.2"/><circle cx="12" cy="11.8" r="4.2" fill="#fff" fill-opacity=".9"/></svg>';
+  }
+  if (st === 'circle') {
+    const d = clamp((Number(g.size) || 5) * 2, 8, 40), sw = clamp(g.strokeWidth === undefined ? 1 : Number(g.strokeWidth) || 0, 0, 4);
+    const fill = g.fillColor || '#888', stroke = g.strokeColor || 'color-mix(in srgb, ' + fill + ' 65%, black)';
+    return '<span class="dot" style="width:' + d + 'px;height:' + d + 'px;left:' + (-d / 2) + 'px;top:' + (-d / 2) + 'px;background:' + esc(fill) + ';border:' + sw + 'px solid ' + esc(stroke) + '"></span>';
+  }
+  let [w, h] = size; const f = Math.min(1, 48 / Math.max(w, h)); w = Math.max(10, w * f); h = Math.max(10, h * f);
+  const im = ui.imgs[g.icon];
+  const pos = 'width:' + w + 'px;height:' + h + 'px;left:' + (-w / 2) + 'px;top:' + (-h / 2) + 'px';
+  return im ? '<img class="ico-img" src="' + im.url + '" alt="" style="' + pos + '">'
+            : '<span class="ico" style="' + pos + '">' + esc((g.name || '?').slice(0, 1).toUpperCase()) + '</span>';
+}
+function renderMarkers(v) {
+  v = v || view();
+  let h = '';
+  for (const gid of Object.keys(doc.groups)) {
+    if (ui.hidden.has(gid)) continue;
+    const g = doc.groups[gid];
+    (doc.markers[gid] || []).forEach((m, i) => {
+      const p = toScreen(v, Number(m.x) || 0, Number(m.y) || 0);
+      if (p.sx < -60 || p.sy < -80 || p.sx > vp.clientWidth + 60 || p.sy > vp.clientHeight + 60) return;
+      const sel = ui.sel && ui.sel.g === gid && ui.sel.i === i;
+      h += '<div class="mk' + (sel ? ' sel' : '') + '" data-g="' + esc(gid) + '" data-i="' + i + '" style="transform:translate(' + p.sx + 'px,' + p.sy + 'px)" title="' + esc(m.name || m.id || g.name || gid) + '">' + shapeHTML(g) + '</div>';
+    });
+  }
+  mlayer.innerHTML = h;
+}
+
+/* ---------- rendering: panels ---------- */
+function labelOf(m, gid) { return m.name || m.id || ((doc.groups[gid] && doc.groups[gid].name) || gid) + ' marker'; }
+function swatch(g) {
+  if (!g) return '<span class="sw"></span>';
+  if (gStyle(g) === 'icon') { const im = ui.imgs[g.icon]; return im ? '<img class="sw sq" src="' + im.url + '" alt="" style="object-fit:contain;border:0">' : '<span class="sw sq"></span>'; }
+  return '<span class="sw" style="background:' + esc(g.pinColor || g.fillColor || '#888') + '"></span>';
+}
+function renderInspector() {
+  const box = $('#mk-form'), m = curMarker();
+  if (!m) {
+    box.innerHTML = '<p class="empty">Nothing selected. Click a marker on the map, or switch to Add marker and click where it belongs.</p>';
+    return;
+  }
+  const gid = ui.sel.g, g = doc.groups[gid] || {};
+  const dsc = typeof m.description === 'string' ? m.description : '';
+  box.innerHTML =
+    '<div class="mk-head" id="mk-head">' + swatch(g) + '<b>' + esc(labelOf(m, gid)) + '</b></div>' +
+    '<div class="row2"><label class="f"><span>X</span><input type="number" step="any" data-mf="x" value="' + esc(m.x) + '"></label>' +
+    '<label class="f"><span>Y</span><input type="number" step="any" data-mf="y" value="' + esc(m.y) + '"></label></div>' +
+    '<label class="f"><span>Group</span><select data-mf="group">' + Object.keys(doc.groups).map(k => '<option value="' + esc(k) + '"' + (k === gid ? ' selected' : '') + '>' + esc(doc.groups[k].name || k) + '</option>').join('') + '</select></label>' +
+    '<label class="f"><span>Name</span><input type="text" data-mf="name" value="' + esc(m.name || '') + '"></label>' +
+    '<label class="f"><span>Description</span><textarea rows="4" data-mf="description" spellcheck="true">' + esc(dsc) + '</textarea><small>One line per paragraph. Wikitext works.</small></label>' +
+    '<div class="row2"><label class="f"><span>ID</span><input type="text" data-mf="id" value="' + esc(m.id ?? '') + '" placeholder="auto" spellcheck="false"></label>' +
+    '<label class="f"><span>Image file</span><input type="text" data-mf="image" value="' + esc(m.image || '') + '" spellcheck="false"></label></div>' +
+    '<label class="f"><span>Read more article</span><input type="text" data-mf="article" value="' + esc(m.article || '') + '" placeholder="Page or Page|Label" spellcheck="false"></label>' +
+    (gStyle(g) === 'icon' ? '<label class="f"><span>Icon override</span><input type="text" data-mf="icon" value="' + esc(m.icon || '') + '" placeholder="uses group icon" spellcheck="false"></label>' : '') +
+    '<div class="btnrow"><button class="btn small" type="button" data-act="dup">Duplicate</button><button class="btn small danger" type="button" data-act="del">Delete marker</button></div>';
+}
+function syncXY() {
+  const m = curMarker(); if (!m) return;
+  ['x', 'y'].forEach(k => { const el = $('[data-mf="' + k + '"]'); if (el && document.activeElement !== el) el.value = m[k]; });
+}
+function renderList() {
+  const q = $('#mk-filter').value.trim().toLowerCase();
+  let rows = '', total = 0, shown = 0;
+  for (const gid of Object.keys(doc.groups)) {
+    (doc.markers[gid] || []).forEach((m, i) => {
+      total++;
+      const label = labelOf(m, gid);
+      if (q && !(label + ' ' + gid + ' ' + (m.id || '') + ' ' + (doc.groups[gid].name || '')).toLowerCase().includes(q)) return;
+      if (++shown > 150) return;
+      const cur = ui.sel && ui.sel.g === gid && ui.sel.i === i;
+      rows += '<button type="button" class="row" data-g="' + esc(gid) + '" data-i="' + i + '"' + (cur ? ' aria-current="true"' : '') + '>' + swatch(doc.groups[gid]) + '<b>' + esc(label) + '</b><code>' + rnd(Number(m.x) || 0) + ', ' + rnd(Number(m.y) || 0) + '</code></button>';
+    });
+  }
+  if (shown > 150) rows += '<div class="more">' + (shown - 150) + ' more. Narrow the filter.</div>';
+  $('#mk-list').innerHTML = rows || '<div class="more">' + (total ? 'No markers match.' : 'No markers yet.') + '</div>';
+  $('#mk-total').textContent = total + (total === 1 ? ' marker' : ' markers');
+}
+function groupEditor(id, g) {
+  const st = gStyle(g);
+  const colorField = (k, label, def) => '<div class="f"><span>' + label + '</span><div class="colorrow"><input type="color" data-gf="' + k + '" value="' + hex6(g[k], def) + '"><code>' + esc(g[k] || def) + '</code></div></div>';
+  let h = '<div class="geditor">' +
+    '<div class="row2"><label class="f"><span>ID</span><input type="text" data-gf="id" value="' + esc(id) + '" spellcheck="false"></label>' +
+    '<label class="f"><span>Name</span><input type="text" data-gf="name" value="' + esc(g.name || '') + '"></label></div>' +
+    '<div class="f"><span>Marker style</span><div class="seg" role="group">' +
+    ['pin', 'circle', 'icon'].map(s => '<button type="button" data-act="style" data-v="' + s + '" aria-pressed="' + (st === s) + '">' + s[0].toUpperCase() + s.slice(1) + '</button>').join('') + '</div></div>';
+  if (st === 'pin') {
+    h += colorField('pinColor', 'Pin color', '#7c5cd6') +
+      '<label class="f"><span>Size</span><input type="number" min="1" step="any" data-gf="size" value="' + esc(sizeWH(g)[0]) + '"></label>';
+  } else if (st === 'circle') {
+    h += colorField('fillColor', 'Fill color', '#e07b39') +
+      '<div class="f"><span>Stroke color</span><div class="colorrow"><input type="color" data-gf="strokeColor" value="' + hex6(g.strokeColor, '#444444') + '"><code>' + esc(g.strokeColor || 'auto') + '</code>' + (g.strokeColor ? '<button class="btn small" type="button" data-act="stroke-auto">Auto</button>' : '') + '</div></div>' +
+      '<div class="row2"><label class="f"><span>Size</span><input type="number" min="0.1" step="any" data-gf="size" value="' + esc(g.size ?? 5) + '"></label>' +
+      '<label class="f"><span>Stroke width</span><input type="number" min="0" step="any" data-gf="strokeWidth" value="' + esc(g.strokeWidth ?? 1) + '"></label></div>';
+  } else {
+    const [w, hh] = sizeWH(g);
+    h += '<label class="f"><span>Icon file name on the wiki</span><input type="text" data-gf="icon" value="' + esc(g.icon || '') + '" spellcheck="false"></label>' +
+      '<div class="btnrow" style="margin-bottom:10px"><button class="btn small" type="button" data-act="icon-pick">Load preview image…</button></div>' +
+      '<div class="row2"><label class="f"><span>Width</span><input type="number" min="1" step="any" data-gf="sizeW" value="' + esc(w) + '"></label>' +
+      '<label class="f"><span>Height</span><input type="number" min="1" step="any" data-gf="sizeH" value="' + esc(hh) + '"></label></div>';
+  }
+  h += '<label class="f"><span>Description</span><input type="text" data-gf="description" value="' + esc(g.description || '') + '"></label>' +
+    '<label class="f"><span>Default article</span><input type="text" data-gf="article" value="' + esc(g.article || '') + '" spellcheck="false"></label>' +
+    '<label class="f"><span>Collectible</span><select data-gf="isCollectible">' +
+    [['', 'No'], ['true', 'Yes (true)'], ['individual', 'individual'], ['group', 'group'], ['globalGroup', 'globalGroup']].map(([v, l]) => '<option value="' + v + '"' + (String(g.isCollectible ?? '') === v ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></label>' +
+    '<label class="chk"><input type="checkbox" data-gf="isDefault"' + (g.isDefault !== false ? ' checked' : '') + '> Shown when the map loads</label>' +
+    '<label class="chk"><input type="checkbox" data-gf="canSearchFor"' + (g.canSearchFor ? ' checked' : '') + '> Searchable</label>' +
+    '<div class="btnrow"><button class="btn small danger" type="button" data-act="del-group">' + (ui.armDel === id ? 'Click again to delete' : 'Delete group and markers') + '</button></div></div>';
+  return h;
+}
+function renderGroups() {
+  const ids = Object.keys(doc.groups);
+  $('#groups').innerHTML = ids.length ? ids.map(id => {
+    const g = doc.groups[id], act = ui.active === id, open = ui.exp === id;
+    return '<div class="gcard' + (act ? ' active' : '') + '" data-gid="' + esc(id) + '">' +
+      '<div class="ghead" data-act="head"><button type="button" class="eye" data-act="vis" aria-pressed="' + !ui.hidden.has(id) + '" aria-label="Show or hide in the editor" title="Show or hide in the editor"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 8s2.6-4.5 7-4.5S15 8 15 8s-2.6 4.5-7 4.5S1 8 1 8z"/><circle cx="8" cy="8" r="2"/></svg></button>' +
+      '<span data-sw>' + swatch(g) + '</span><span class="gname" data-gname>' + esc(g.name || id) + '</span><span class="gcount" data-gcount>' + (doc.markers[id] || []).length + '</span></div>' +
+      (open ? groupEditor(id, g) : '') + '</div>';
+  }).join('') : '<p class="empty">No groups yet. Add one to start placing markers.</p>';
+  const sel = $('#active-group');
+  sel.innerHTML = ids.length ? ids.map(id => '<option value="' + esc(id) + '"' + (id === ui.active ? ' selected' : '') + '>' + esc(doc.groups[id].name || id) + '</option>').join('') : '<option value="">no groups</option>';
+}
+function updateGroupHeads() {
+  $$('.gcard').forEach(c => {
+    const id = c.dataset.gid, g = doc.groups[id]; if (!g) return;
+    c.querySelector('[data-gname]').textContent = g.name || id;
+    c.querySelector('[data-gcount]').textContent = (doc.markers[id] || []).length;
+    c.querySelector('[data-sw]').innerHTML = swatch(g);
+  });
+  $$('#active-group option').forEach(o => { const g = doc.groups[o.value]; if (g) o.textContent = g.name || o.value; });
+  const m = curMarker(), hd = $('#mk-head');
+  if (m && hd) hd.innerHTML = swatch(doc.groups[ui.sel.g]) + '<b>' + esc(labelOf(m, ui.sel.g)) + '</b>';
+}
+function renderWarns() {
+  const w = validate();
+  $('#warns').innerHTML = w.length ? w.map(([l, t]) => '<div class="warn ' + l + '">' + esc(t) + '</div>').join('') : '<div class="warn ok">No problems found.</div>';
+  const n = w.filter(x => x[0] !== 'i').length, b = $('#warn-badge');
+  b.hidden = !n; b.textContent = n;
+}
+function syncMapTab() {
+  $('#schema').value = doc.$schema || '';
+  $('#bg-image').value = doc.background.image || '';
+  $('#bg-pix').checked = !!doc.background.pixelated;
+  const ex = $('#bg-extra');
+  ex.hidden = !(doc.extra.backgrounds || doc.background.tiles || (doc.otherOverlays || []).length);
+  ex.textContent = doc.extra.backgrounds ? 'This map has multiple backgrounds. They are kept as they are in the JSON, and the first image is previewed here.' : 'Tiles or overlays are kept as they are in the JSON.';
+  $('#crs-default').checked = doc.useDefaultCrs;
+  const c = doc.crs, xy = c.order === 'xy';
+  $('#crs-order').value = c.order;
+  const [a, b] = xy ? ['X', 'Y'] : ['Y', 'X'];
+  $('#l-tl-a').textContent = 'topLeft ' + a; $('#l-tl-b').textContent = 'topLeft ' + b;
+  $('#l-br-a').textContent = 'bottomRight ' + a; $('#l-br-b').textContent = 'bottomRight ' + b;
+  const set = (id, v) => { const el = $(id); if (document.activeElement !== el) el.value = v; };
+  set('#crs-tl-a', c.topLeft[0]); set('#crs-tl-b', c.topLeft[1]); set('#crs-br-a', c.bottomRight[0]); set('#crs-br-b', c.bottomRight[1]);
+  ['#crs-order', '#crs-tl-a', '#crs-tl-b', '#crs-br-a', '#crs-br-b'].forEach(s => $(s).disabled = doc.useDefaultCrs);
+  const bc = doc.settings.backdropColor;
+  $('#bd-color').value = hex6(bc, '#0b120d'); $('#bd-val').textContent = bc || 'none';
+  $('#show-coords').checked = doc.settings.showCoordinates !== false;
+  $('#pre-px').disabled = !bgPreview();
+}
+function renderJSON() { $('#out').value = currentJSON(); renderWarns(); }
+function changed() { render(); renderJSON(); renderList(); updateGroupHeads(); scheduleHist(); }
+function renderAll() {
+  syncMapTab(); renderGroups(); renderInspector(); renderList(); renderLinesPanel(); renderJSON(); render(); updateUndoBtns();
+}
+
+/* ---------- actions ---------- */
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2200); }
+function setTab(name) {
+  ui.tab = name;
+  $$('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
+  $$('.tabpanel').forEach(p => p.hidden = p.id !== 'p-' + name);
+}
+function setTool(t) {
+  if (t !== ui.tool) ui.lineOpen = false;
+  ui.tool = t;
+  $('#t-select').setAttribute('aria-pressed', String(t === 'select'));
+  $('#t-add').setAttribute('aria-pressed', String(t === 'add'));
+  $('#t-line').setAttribute('aria-pressed', String(t === 'line'));
+  vp.classList.toggle('add', t === 'add');
+  vp.classList.toggle('line', t === 'line');
+  renderLines();
+}
+function selectMarker(g, i, opts = {}) {
+  ui.sel = { g, i }; ui.active = g;
+  if (ui.selL != null) { ui.selL = null; ui.selV = null; renderLinesPanel(); }
+  $('#active-group').value = g;
+  renderInspector(); renderList(); render();
+  $$('.gcard').forEach(c => c.classList.toggle('active', c.dataset.gid === g));
+  if (opts.tab !== false && ui.tab !== 'marker') setTab('marker');
+}
+function deselect() {
+  if (!ui.sel && ui.selL == null) return;
+  ui.sel = null; ui.selL = null; ui.selV = null;
+  renderInspector(); renderList(); renderLinesPanel(); render();
+}
+function addMarkerAt(pos) {
+  const g = ui.active;
+  if (!g || !doc.groups[g]) { toast('Add a group first, under Groups.'); setTab('groups'); return; }
+  const p = fromScreen(view(), pos.x, pos.y);
+  (doc.markers[g] = doc.markers[g] || []).push({ x: rnd(snapv(p.x)), y: rnd(snapv(p.y)) });
+  ui.sel = { g, i: doc.markers[g].length - 1 };
+  renderInspector(); changed(); if (ui.tab !== 'marker') setTab('marker');
+}
+function deleteSelected() {
+  const m = curMarker(); if (!m) return;
+  doc.markers[ui.sel.g].splice(ui.sel.i, 1); ui.sel = null;
+  renderInspector(); changed();
+}
+function centerOn(m) {
+  const v = view(), p = toScreen(v, Number(m.x) || 0, Number(m.y) || 0);
+  ui.tx += vp.clientWidth / 2 - p.sx; ui.ty += vp.clientHeight / 2 - p.sy; render();
+}
+function fit() {
+  const r = vp.getBoundingClientRect(); if (!r.width || !r.height) return;
+  const v = view(), pad = 28;
+  ui.k = clamp(Math.min((r.width - pad * 2) / v.W, (r.height - pad * 2) / v.H), .02, 40);
+  ui.tx = (r.width - v.W * ui.k) / 2; ui.ty = (r.height - v.H * ui.k) / 2;
+  render();
+}
+function zoomAt(pos, nk) {
+  nk = clamp(nk, .02, 40);
+  ui.tx = pos.x - (pos.x - ui.tx) * nk / ui.k; ui.ty = pos.y - (pos.y - ui.ty) * nk / ui.k; ui.k = nk; render();
+}
+function replaceDoc(d) {
+  doc = d; ui.sel = null; ui.selL = null; ui.selV = null; ui.lineOpen = false; ui.hidden.clear(); ui.exp = null;
+  ui.active = Object.keys(doc.groups)[0] || null;
+  renderAll(); fit(); pushHist();
+}
+function loadImageFile(file, cb) {
+  if (!file || !/^image\//.test(file.type)) { toast('That file is not an image.'); return; }
+  const url = URL.createObjectURL(file), img = new Image();
+  img.onload = () => { ui.imgs[file.name] = { url, w: img.naturalWidth, h: img.naturalHeight }; cb(file.name, ui.imgs[file.name]); };
+  img.onerror = () => toast('Could not read that image.');
+  img.src = url;
+}
+function setBackgroundFile(file) {
+  loadImageFile(file, name => { doc.background.image = name; syncMapTab(); renderJSON(); fit(); scheduleHist(); toast('Preview loaded. Set the coordinate system to match.'); });
+}
+
+/* ---------- lines (polyline overlays on the background) ---------- */
+const LINE_COLORS = ['#e0453a', '#2f80ed', '#27ae60', '#f2994a', '#9b51e0', '#00a3a3'];
+const llayer = $('#llayer');
+function snapToMarker(v, p) {
+  for (const gid of Object.keys(doc.groups)) {
+    if (ui.hidden.has(gid)) continue;
+    for (const m of doc.markers[gid] || []) {
+      const s = toScreen(v, Number(m.x) || 0, Number(m.y) || 0);
+      if (Math.hypot(s.sx - p.x, s.sy - p.y) <= 10) return [rnd(Number(m.x) || 0), rnd(Number(m.y) || 0)];
+    }
+  }
+  return null;
+}
+function renderLines(v) {
+  v = v || view();
+  let h = '', top = '';
+  (doc.lines || []).forEach((L, li) => {
+    if (!L.pts.length) return;
+    const sp = L.pts.map(p => toScreen(v, p[0], p[1]));
+    const d = sp.map((p, i) => (i ? 'L' : 'M') + p.sx.toFixed(1) + ' ' + p.sy.toFixed(1)).join(' ');
+    const sel = ui.selL === li, col = esc(L.color);
+    if (sp.length === 1) h += '<circle cx="' + sp[0].sx + '" cy="' + sp[0].sy + '" r="4" fill="' + col + '"/>';
+    else {
+      h += '<path d="' + d + '" fill="none" stroke="' + (sel ? 'var(--sel)' : 'rgba(0,0,0,.4)') + '" stroke-opacity="' + (sel ? .55 : 1) + '" stroke-width="' + (sel ? 9 : 6.5) + '" stroke-linecap="round" stroke-linejoin="round"/>' +
+           '<path d="' + d + '" fill="none" stroke="' + col + '" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>' +
+           '<path class="lhit" data-l="' + li + '" d="' + d + '"><title>' + esc(L.name || 'Line ' + (li + 1)) + '</title></path>';
+    }
+    if (sel) {
+      if (ui.tool === 'line' && ui.lineOpen && ui.cur && sp.length) {
+        const e = sp[sp.length - 1];
+        top += '<path d="M' + e.sx + ' ' + e.sy + ' L' + ui.cur.x + ' ' + ui.cur.y + '" fill="none" stroke="' + col + '" stroke-width="2" stroke-dasharray="5 5" opacity=".8"/>';
+      }
+      for (let i = 0; i < sp.length - 1; i++) {
+        const a = sp[i], b = sp[i + 1];
+        if (Math.hypot(a.sx - b.sx, a.sy - b.sy) > 34) top += '<circle class="mid" data-l="' + li + '" data-mid="' + i + '" cx="' + (a.sx + b.sx) / 2 + '" cy="' + (a.sy + b.sy) / 2 + '" r="4.5"><title>Add a point</title></circle>';
+      }
+      sp.forEach((p, i) => { top += '<circle class="vtx' + (ui.selV === i ? ' sel' : '') + '" data-l="' + li + '" data-vtx="' + i + '" cx="' + p.sx + '" cy="' + p.sy + '" r="6"/>'; });
+    }
+  });
+  llayer.innerHTML = h + top;
+}
+const lineLabel = (L, i) => L.name || ('Line ' + (i + 1));
+function renderLinesList() {
+  $('#l-list').innerHTML = doc.lines.length
+    ? doc.lines.map((L, i) => '<button type="button" class="row" data-l="' + i + '"' + (ui.selL === i ? ' aria-current="true"' : '') + '><span class="sw" style="background:' + esc(L.color) + '"></span><b>' + esc(lineLabel(L, i)) + '</b><code>' + L.pts.length + ' pts</code></button>').join('')
+    : '<div class="more">No lines yet. Choose Draw new line, then click the map.</div>';
+}
+function renderLinesEditor() {
+  const box = $('#l-edit'), L = doc.lines[ui.selL];
+  if (!L) { box.innerHTML = '<p class="empty">Select a line on the map or in the list to edit it.</p>'; return; }
+  const vt = ui.selV != null && L.pts[ui.selV];
+  box.innerHTML =
+    '<label class="f"><span>Name</span><input type="text" data-lf="name" value="' + esc(L.name) + '"><small>Shown as a tooltip on the wiki.</small></label>' +
+    '<div class="f"><span>Color</span><div class="colorrow"><input type="color" data-lf="color" value="' + hex6(L.color, '#e0453a') + '"><code>' + esc(L.rawColor !== undefined ? JSON.stringify(L.rawColor) : L.color) + '</code></div></div>' +
+    (vt ? '<div class="sechead"><span>Point ' + (ui.selV + 1) + ' of ' + L.pts.length + '</span></div>' +
+      '<div class="row2"><label class="f"><span>X</span><input type="number" step="any" data-lf="vx" value="' + esc(vt[0]) + '"></label><label class="f"><span>Y</span><input type="number" step="any" data-lf="vy" value="' + esc(vt[1]) + '"></label></div>' +
+      '<div class="btnrow" style="margin-bottom:10px"><button class="btn small danger" type="button" data-act="del-pt">Delete point</button></div>'
+      : '<p class="note">Select a point on the map to edit or delete it. Click a small dot between two points to add one.</p>') +
+    '<div class="btnrow"><button class="btn small" type="button" data-act="more">Add points</button><button class="btn small" type="button" data-act="reverse">Reverse</button><button class="btn small danger" type="button" data-act="del-line">' + (ui.armLine === ui.selL ? 'Click again to delete' : 'Delete line') + '</button></div>';
+}
+function renderLinesPanel() { $('#l-warn').hidden = !doc.extra.backgrounds; renderLinesList(); renderLinesEditor(); }
+function linesChanged() { renderLines(); renderJSON(); renderLinesList(); scheduleHist(); }
+function addLinePoint(p) {
+  if (doc.extra.backgrounds) { toast('Lines can only be added to a single background.'); return; }
+  const v = view();
+  let q = snapToMarker(v, p);
+  if (!q) { const c = fromScreen(v, p.x, p.y); q = [rnd(snapv(c.x)), rnd(snapv(c.y))]; }
+  let L = doc.lines[ui.selL];
+  if (!ui.lineOpen || !L) {
+    L = { name: '', color: LINE_COLORS[doc.lines.length % LINE_COLORS.length], pts: [] };
+    doc.lines.push(L); ui.selL = doc.lines.length - 1; ui.lineOpen = true;
+  }
+  const last = L.pts[L.pts.length - 1];
+  if (last) { const s = toScreen(v, last[0], last[1]); if (Math.hypot(s.sx - p.x, s.sy - p.y) < 4) return; }
+  L.pts.push(q); ui.selV = L.pts.length - 1; ui.sel = null;
+  renderInspector(); renderList(); renderLinesEditor(); linesChanged();
+  if (ui.tab !== 'lines') setTab('lines');
+}
+function deleteVertex() {
+  const L = doc.lines[ui.selL]; if (!L || ui.selV == null) return;
+  L.pts.splice(ui.selV, 1); ui.selV = null;
+  if (!L.pts.length) { doc.lines.splice(ui.selL, 1); ui.selL = null; ui.lineOpen = false; }
+  renderLinesEditor(); linesChanged();
+}
+
+/* ---------- pointer interaction ---------- */
+const ptrs = new Map(); let drag = null;
+const posOf = e => { const r = vp.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+vp.addEventListener('pointerdown', e => {
+  if (e.button === 2) return;
+  const p = posOf(e); ptrs.set(e.pointerId, p);
+  try { vp.setPointerCapture(e.pointerId); } catch (_) {}
+  if (ptrs.size === 2) {
+    const [a, b] = [...ptrs.values()];
+    drag = { type: 'pinch', d0: Math.hypot(a.x - b.x, a.y - b.y) || 1, k0: ui.k }; return;
+  }
+  const cl = s => e.target.closest && e.target.closest(s);
+  const vt = cl('[data-vtx]'), md = cl('[data-mid]'), lh = cl('.lhit');
+  if (vt) {
+    ui.selL = +vt.dataset.l; ui.selV = +vt.dataset.vtx; ui.sel = null;
+    renderInspector(); renderList(); renderLinesList(); renderLinesEditor(); renderLines();
+    drag = { type: 'vtx', l: ui.selL, i: ui.selV, start: p, moved: false }; return;
+  }
+  if (md) {
+    const l = +md.dataset.l, i = +md.dataset.mid, L = doc.lines[l];
+    L.pts.splice(i + 1, 0, [rnd((L.pts[i][0] + L.pts[i + 1][0]) / 2), rnd((L.pts[i][1] + L.pts[i + 1][1]) / 2)]);
+    ui.selL = l; ui.selV = i + 1;
+    renderLinesEditor(); linesChanged();
+    drag = { type: 'vtx', l, i: i + 1, start: p, moved: false }; return;
+  }
+  if (lh && ui.tool !== 'line') {
+    ui.selL = +lh.dataset.l; ui.selV = null; ui.sel = null;
+    renderInspector(); renderList(); renderLinesPanel(); renderLines();
+    if (ui.tab !== 'lines') setTab('lines');
+    drag = null; return;
+  }
+  const t = cl('.mk');
+  if (t && ui.tool !== 'line') {
+    const g = t.dataset.g, i = +t.dataset.i, m = doc.markers[g][i], v = view(), s = toScreen(v, Number(m.x) || 0, Number(m.y) || 0);
+    selectMarker(g, i);
+    drag = { type: 'marker', g, i, off: { x: s.sx - p.x, y: s.sy - p.y }, start: p, moved: false };
+  } else {
+    drag = { type: 'pan', start: p, tx: ui.tx, ty: ui.ty, moved: false };
+  }
+});
+vp.addEventListener('pointermove', e => {
+  const p = posOf(e);
+  if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, p);
+  const v = view(), c = fromScreen(v, p.x, p.y);
+  const xy = doc.crs.order === 'xy';
+  $('#readout').textContent = xy ? 'x ' + rnd(c.x) + '   y ' + rnd(c.y) : 'y ' + rnd(c.y) + '   x ' + rnd(c.x);
+  ui.cur = p;
+  if (ui.tool === 'line' && ui.lineOpen) renderLines(v);
+  if (!drag) return;
+  if (drag.type === 'vtx') {
+    if (!drag.moved && Math.hypot(p.x - drag.start.x, p.y - drag.start.y) < 3) return;
+    drag.moved = true;
+    const L = doc.lines[drag.l]; if (!L) return;
+    L.pts[drag.i] = snapToMarker(v, p) || [rnd(snapv(c.x)), rnd(snapv(c.y))];
+    linesChanged(); return;
+  }
+  if (drag.type === 'pinch' && ptrs.size === 2) {
+    const [a, b] = [...ptrs.values()];
+    zoomAt({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, drag.k0 * (Math.hypot(a.x - b.x, a.y - b.y) / drag.d0)); return;
+  }
+  if (drag.type === 'pan') {
+    if (!drag.moved && Math.hypot(p.x - drag.start.x, p.y - drag.start.y) < 4) return;
+    drag.moved = true; vp.classList.add('panning');
+    ui.tx = drag.tx + p.x - drag.start.x; ui.ty = drag.ty + p.y - drag.start.y; render();
+  } else if (drag.type === 'marker') {
+    if (!drag.moved && Math.hypot(p.x - drag.start.x, p.y - drag.start.y) < 4) return;
+    drag.moved = true;
+    const q = fromScreen(v, p.x + drag.off.x, p.y + drag.off.y), m = doc.markers[drag.g][drag.i];
+    m.x = rnd(snapv(q.x)); m.y = rnd(snapv(q.y));
+    render(); renderJSON(); syncXY(); scheduleHist();
+  }
+});
+const endPtr = e => {
+  const p = posOf(e); ptrs.delete(e.pointerId);
+  if (drag && drag.type === 'pan' && !drag.moved && e.type === 'pointerup') {
+    if (ui.tool === 'add') addMarkerAt(p); else if (ui.tool === 'line') addLinePoint(p); else deselect();
+  }
+  if (drag && drag.type === 'vtx' && drag.moved) renderLinesEditor();
+  if (drag && drag.type === 'marker' && drag.moved) { renderList(); }
+  if (ptrs.size === 0) { drag = null; vp.classList.remove('panning'); }
+  else if (drag && drag.type === 'pinch') drag = null;
+};
+vp.addEventListener('pointerup', endPtr);
+vp.addEventListener('pointercancel', endPtr);
+vp.addEventListener('dblclick', () => { if (ui.tool === 'line' && ui.lineOpen) { ui.lineOpen = false; renderLines(); toast('Line finished'); } });
+vp.addEventListener('wheel', e => { e.preventDefault(); zoomAt(posOf(e), ui.k * Math.exp(-e.deltaY * (e.ctrlKey ? .01 : .0015))); }, { passive: false });
+vp.addEventListener('contextmenu', e => { if (e.target.closest('.mk')) { e.preventDefault(); const t = e.target.closest('.mk'); selectMarker(t.dataset.g, +t.dataset.i); } });
+['dragenter', 'dragover'].forEach(n => vp.addEventListener(n, e => { e.preventDefault(); vp.classList.add('dropping'); }));
+['dragleave', 'drop'].forEach(n => vp.addEventListener(n, e => { e.preventDefault(); vp.classList.remove('dropping'); }));
+vp.addEventListener('drop', e => { const f = e.dataTransfer && e.dataTransfer.files[0]; if (f) setBackgroundFile(f); });
+
+/* ---------- inspector wiring ---------- */
+$('#mk-form').addEventListener('input', e => {
+  const f = e.target.dataset.mf, m = curMarker(); if (!f || !m) return;
+  const v = e.target.value;
+  if (f === 'x' || f === 'y') { const n = parseFloat(v); if (Number.isNaN(n)) return; m[f] = n; }
+  else if (f === 'group') {
+    const from = ui.sel.g; if (v === from) return;
+    const [mv] = doc.markers[from].splice(ui.sel.i, 1);
+    (doc.markers[v] = doc.markers[v] || []).push(mv);
+    ui.sel = { g: v, i: doc.markers[v].length - 1 }; ui.active = v;
+    renderInspector(); renderGroups();
+  } else if (v === '') delete m[f]; else m[f] = v;
+  changed();
+});
+$('#mk-form').addEventListener('click', e => {
+  const a = e.target.closest('[data-act]'); if (!a) return;
+  if (a.dataset.act === 'del') deleteSelected();
+  if (a.dataset.act === 'dup') {
+    const m = curMarker(); if (!m) return;
+    const v = view(), c = { ...m }; delete c.id;
+    c.x = rnd((Number(m.x) || 0) + v.dx * .02); c.y = rnd((Number(m.y) || 0) + v.dy * .02);
+    doc.markers[ui.sel.g].push(c); ui.sel.i = doc.markers[ui.sel.g].length - 1; renderInspector(); changed();
+  }
+});
+$('#mk-list').addEventListener('click', e => {
+  const r = e.target.closest('.row'); if (!r) return;
+  selectMarker(r.dataset.g, +r.dataset.i, { tab: false });
+  centerOn(doc.markers[r.dataset.g][+r.dataset.i]);
+});
+$('#mk-filter').addEventListener('input', renderList);
+
+/* ---------- groups wiring ---------- */
+function setStyle(g, s) {
+  const col = g.pinColor || g.fillColor || PALETTE[Object.keys(doc.groups).length % PALETTE.length];
+  ['icon', 'pinColor', 'fillColor', 'strokeColor', 'strokeWidth', 'size'].forEach(k => delete g[k]);
+  if (s === 'pin') { g.pinColor = col; g.size = 32; }
+  else if (s === 'circle') { g.fillColor = col; g.size = 5; }
+  else { g.icon = ''; g.size = [32, 32]; }
+}
+function renameGroup(oldId, newId) {
+  const ng = {}, nm = {};
+  for (const [k, v] of Object.entries(doc.groups)) ng[k === oldId ? newId : k] = v;
+  for (const [k, v] of Object.entries(doc.markers)) nm[k === oldId ? newId : k] = v;
+  doc.groups = ng; doc.markers = nm;
+  if (ui.active === oldId) ui.active = newId;
+  if (ui.exp === oldId) ui.exp = newId;
+  if (ui.sel && ui.sel.g === oldId) ui.sel.g = newId;
+  if (ui.hidden.delete(oldId)) ui.hidden.add(newId);
+}
+$('#g-add').addEventListener('click', () => {
+  const id = nextGroupId(), n = Object.keys(doc.groups).length;
+  doc.groups[id] = { name: 'New group', pinColor: PALETTE[n % PALETTE.length], size: 32 };
+  ui.active = id; ui.exp = id; renderGroups(); changed();
+});
+$('#groups').addEventListener('click', e => {
+  const card = e.target.closest('.gcard'); if (!card) return;
+  const id = card.dataset.gid, g = doc.groups[id], a = e.target.closest('[data-act]');
+  const act = a && a.dataset.act;
+  if (act === 'vis') { ui.hidden.has(id) ? ui.hidden.delete(id) : ui.hidden.add(id); a.setAttribute('aria-pressed', String(!ui.hidden.has(id))); render(); return; }
+  if (act === 'head') { ui.exp = (ui.active === id && ui.exp === id) ? null : id; ui.active = id; ui.armDel = null; renderGroups(); return; }
+  if (act === 'style') { setStyle(g, a.dataset.v); renderGroups(); changed(); return; }
+  if (act === 'stroke-auto') { delete g.strokeColor; renderGroups(); changed(); return; }
+  if (act === 'icon-pick') { ui.iconFor = id; $('#icon-file').click(); return; }
+  if (act === 'del-group') {
+    if (ui.armDel === id) {
+      delete doc.groups[id]; delete doc.markers[id]; ui.armDel = null; ui.hidden.delete(id);
+      if (ui.sel && ui.sel.g === id) ui.sel = null;
+      if (ui.active === id) ui.active = Object.keys(doc.groups)[0] || null;
+      if (ui.exp === id) ui.exp = null;
+      renderGroups(); renderInspector(); changed();
+    } else { ui.armDel = id; renderGroups(); setTimeout(() => { if (ui.armDel === id) { ui.armDel = null; renderGroups(); } }, 3000); }
+  }
+});
+function onGroupField(e, final) {
+  const card = e.target.closest('.gcard'), f = e.target.dataset.gf; if (!card || !f) return;
+  const id = card.dataset.gid, g = doc.groups[id], t = e.target;
+  if (f === 'id') {
+    if (!final) return;
+    const nv = t.value.trim();
+    if (nv === id) return;
+    if (!ID_RE.test(nv)) { toast('IDs may only use letters, digits, dashes and underscores.'); t.value = id; return; }
+    if (doc.groups[nv]) { toast('A group named "' + nv + '" already exists.'); t.value = id; return; }
+    renameGroup(id, nv); renderGroups(); renderInspector(); changed(); return;
+  }
+  const num = () => { const n = parseFloat(t.value); return Number.isNaN(n) ? null : n; };
+  if (f === 'size') { const n = num(); if (n === null || n <= 0) return; g.size = n; }
+  else if (f === 'sizeW' || f === 'sizeH') { const n = num(); if (n === null || n <= 0) return; const [w, h] = sizeWH(g); g.size = f === 'sizeW' ? [n, h] : [w, n]; }
+  else if (f === 'strokeWidth') { const n = num(); if (n === null || n < 0) return; g.strokeWidth = n; }
+  else if (f === 'isDefault') g.isDefault = t.checked;
+  else if (f === 'canSearchFor') { if (t.checked) g.canSearchFor = true; else delete g.canSearchFor; }
+  else if (f === 'isCollectible') { const v = t.value; if (!v) delete g.isCollectible; else g.isCollectible = v === 'true' ? true : v; }
+  else if (t.type === 'color') { g[f] = t.value; const code = t.parentElement.querySelector('code'); if (code) code.textContent = t.value; if (f === 'strokeColor' && !t.parentElement.querySelector('button')) { renderGroups(); } }
+  else if (t.value === '') delete g[f]; else g[f] = t.value;
+  changed();
+}
+$('#groups').addEventListener('input', e => onGroupField(e, false));
+$('#groups').addEventListener('change', e => onGroupField(e, true));
+$('#icon-file').addEventListener('change', e => {
+  const f = e.target.files[0], id = ui.iconFor; e.target.value = '';
+  if (!f || !id || !doc.groups[id]) return;
+  loadImageFile(f, name => { doc.groups[id].icon = name; renderGroups(); changed(); });
+});
+$('#active-group').addEventListener('change', e => { ui.active = e.target.value; $$('.gcard').forEach(c => c.classList.toggle('active', c.dataset.gid === ui.active)); });
+
+/* ---------- map tab wiring ---------- */
+$('#schema').addEventListener('input', e => { doc.$schema = e.target.value.trim(); renderJSON(); scheduleHist(); });
+$('#bg-image').addEventListener('input', e => { doc.background.image = e.target.value.trim(); renderJSON(); render(); scheduleHist(); $('#pre-px').disabled = !bgPreview(); });
+$('#bg-pix').addEventListener('change', e => { if (e.target.checked) doc.background.pixelated = true; else delete doc.background.pixelated; changed(); });
+$('#bg-pick').addEventListener('click', () => $('#bg-file').click());
+$('#bg-file').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) setBackgroundFile(f); });
+$('#bg-clear').addEventListener('click', () => { doc.background.image = ''; syncMapTab(); changed(); fit(); });
+function readCrs() {
+  const n = id => parseFloat($(id).value);
+  const tl = [n('#crs-tl-a'), n('#crs-tl-b')], br = [n('#crs-br-a'), n('#crs-br-b')];
+  if ([...tl, ...br].some(Number.isNaN)) return;
+  doc.crs.topLeft = tl; doc.crs.bottomRight = br; changed(); fitSoft();
+}
+function fitSoft() { if (!ui.userMoved) fit(); }
+['#crs-tl-a', '#crs-tl-b', '#crs-br-a', '#crs-br-b'].forEach(s => $(s).addEventListener('input', readCrs));
+$('#crs-order').addEventListener('change', e => {
+  const o = doc.crs.order, n = e.target.value;
+  if ((o === 'xy') !== (n === 'xy')) { doc.crs.topLeft = [...doc.crs.topLeft].reverse(); doc.crs.bottomRight = [...doc.crs.bottomRight].reverse(); }
+  doc.crs.order = n; syncMapTab(); changed();
+});
+$('#crs-default').addEventListener('change', e => {
+  doc.useDefaultCrs = e.target.checked;
+  if (doc.useDefaultCrs) doc.crs = defaultCrs();
+  syncMapTab(); changed(); fit();
+});
+const preset = (order, tl, br) => { doc.useDefaultCrs = false; doc.crs = { order, topLeft: tl, bottomRight: br }; syncMapTab(); changed(); fit(); };
+$('#pre-up').addEventListener('click', () => { doc.useDefaultCrs = true; doc.crs = defaultCrs(); syncMapTab(); changed(); fit(); });
+$('#pre-down').addEventListener('click', () => preset('yx', [0, 0], [100, 100]));
+$('#pre-px').addEventListener('click', () => { const im = bgPreview(); if (im) preset('yx', [0, 0], [im.h, im.w]); });
+$('#bd-color').addEventListener('input', e => { doc.settings.backdropColor = e.target.value; $('#bd-val').textContent = e.target.value; changed(); });
+$('#bd-clear').addEventListener('click', () => { doc.settings.backdropColor = ''; syncMapTab(); changed(); });
+$('#show-coords').addEventListener('change', e => { doc.settings.showCoordinates = e.target.checked; changed(); });
+
+/* ---------- json tab, header, toolbar ---------- */
+async function copyJSON() {
+  const text = currentJSON();
+  try { await navigator.clipboard.writeText(text); toast('JSON copied'); }
+  catch (_) { setTab('json'); const o = $('#out'); o.focus(); o.select(); toast('Press Ctrl+C to copy the selected JSON'); }
+}
+$('#b-copy').addEventListener('click', copyJSON);
+$('#out-copy').addEventListener('click', copyJSON);
+$('#b-load').addEventListener('click', () => {
+  try {
+    const d = importDoc(JSON.parse($('#in').value));
+    pushHist(); replaceDoc(d); $('#in-err').textContent = ''; $('#in').value = ''; toast('Map loaded'); setTab('marker');
+  } catch (err) { $('#in-err').textContent = 'Could not load: ' + err.message; }
+});
+function twoStep(btn, label, fn) {
+  let t = null; const orig = btn.textContent;
+  btn.addEventListener('click', () => {
+    if (t) { clearTimeout(t); t = null; btn.textContent = orig; fn(); return; }
+    btn.textContent = label; t = setTimeout(() => { t = null; btn.textContent = orig; }, 3000);
+  });
+}
+twoStep($('#b-new'), 'Discard and start over?', () => { pushHist(); replaceDoc(blankDoc()); setTab('groups'); toast('Blank map. Add a group to begin.'); });
+twoStep($('#b-ex'), 'Replace with example?', () => { pushHist(); replaceDoc(exampleDoc()); toast('Example loaded'); });
+$('#b-undo').addEventListener('click', undo);
+$('#b-redo').addEventListener('click', redo);
+$('#t-select').addEventListener('click', () => setTool('select'));
+$('#t-add').addEventListener('click', () => setTool('add'));
+$('#t-line').addEventListener('click', () => setTool('line'));
+$('#l-new').addEventListener('click', () => {
+  if (doc.extra.backgrounds) { toast('Lines can only be added to a single background.'); return; }
+  setTool('line'); ui.lineOpen = false; ui.selL = null; ui.selV = null;
+  renderLinesPanel(); renderLines(); toast('Click the map to place points. Double-click or press Enter to finish.');
+});
+$('#l-list').addEventListener('click', e => {
+  const r = e.target.closest('.row'); if (!r) return;
+  ui.selL = +r.dataset.l; ui.selV = null; ui.sel = null; ui.lineOpen = false;
+  renderInspector(); renderList(); renderLinesPanel(); renderLines();
+});
+$('#l-edit').addEventListener('input', e => {
+  const f = e.target.dataset.lf, L = doc.lines[ui.selL]; if (!f || !L) return;
+  const v = e.target.value;
+  if (f === 'name') L.name = v;
+  else if (f === 'color') { L.color = v; delete L.rawColor; e.target.parentElement.querySelector('code').textContent = v; }
+  else { const n = parseFloat(v); if (Number.isNaN(n) || ui.selV == null) return; L.pts[ui.selV][f === 'vx' ? 0 : 1] = n; }
+  linesChanged();
+});
+$('#l-edit').addEventListener('click', e => {
+  const a = e.target.closest('[data-act]'), L = doc.lines[ui.selL]; if (!a || !L) return;
+  const act = a.dataset.act;
+  if (act === 'more') { setTool('line'); ui.lineOpen = true; renderLines(); toast('Click the map to continue this line.'); }
+  else if (act === 'reverse') { L.pts.reverse(); ui.selV = null; renderLinesEditor(); linesChanged(); }
+  else if (act === 'del-pt') deleteVertex();
+  else if (act === 'del-line') {
+    const i = ui.selL;
+    if (ui.armLine === i) { doc.lines.splice(i, 1); ui.armLine = null; ui.selL = null; ui.selV = null; ui.lineOpen = false; renderLinesPanel(); linesChanged(); }
+    else { ui.armLine = i; renderLinesEditor(); setTimeout(() => { if (ui.armLine === i) { ui.armLine = null; renderLinesEditor(); } }, 3000); }
+  }
+});
+$('#snap').addEventListener('change', e => { ui.snap = +e.target.value; });
+$('#show-grid').addEventListener('change', e => { ui.grid = e.target.checked; renderGrid(); });
+$('#z-in').addEventListener('click', () => zoomAt({ x: vp.clientWidth / 2, y: vp.clientHeight / 2 }, ui.k * 1.35));
+$('#z-out').addEventListener('click', () => zoomAt({ x: vp.clientWidth / 2, y: vp.clientHeight / 2 }, ui.k / 1.35));
+$('#z-fit').addEventListener('click', fit);
+$$('.tabs button').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+
+addEventListener('keydown', e => {
+  const t = e.target, typing = t.closest && t.closest('input:not([type=checkbox]):not([type=color]),textarea,select');
+  const mod = e.ctrlKey || e.metaKey;
+  if (typing) return;
+  if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+  if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return; }
+  if (mod || e.altKey) return;
+  const k = e.key;
+  if (k === 'Delete' || k === 'Backspace') {
+    if (ui.selL != null && ui.selV != null) { e.preventDefault(); deleteVertex(); }
+    else if (curMarker()) { e.preventDefault(); deleteSelected(); }
+  }
+  else if (k === 'Escape') { setTool('select'); deselect(); }
+  else if (k === 'Enter' && ui.tool === 'line' && ui.lineOpen) { ui.lineOpen = false; renderLines(); toast('Line finished'); }
+  else if (k === 'l' || k === 'L') setTool('line');
+  else if (k === 'a' || k === 'A') setTool('add');
+  else if (k === 'v' || k === 'V') setTool('select');
+  else if (k === 'f' || k === 'F') fit();
+  else if (k.startsWith('Arrow') && curMarker()) {
+    e.preventDefault();
+    const v = view(), m = curMarker(), st = e.shiftKey ? 10 : 1;
+    const ux = v.dx / (v.W * ui.k) * st, uy = v.dy / (v.H * ui.k) * st;
+    if (k === 'ArrowLeft') m.x = rnd(m.x - ux); if (k === 'ArrowRight') m.x = rnd(m.x + ux);
+    if (k === 'ArrowUp') m.y = rnd(m.y - uy); if (k === 'ArrowDown') m.y = rnd(m.y + uy);
+    syncXY(); changed();
+  }
+});
+
+/* ---------- start ---------- */
+new ResizeObserver(() => { if (!ui.fitted && vp.clientWidth) { ui.fitted = true; fit(); } else renderGrid(); renderMarkers(); }).observe(vp);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => renderGrid());
+new MutationObserver(() => renderGrid()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+try {
+  const saved = localStorage.getItem(DRAFT);
+  if (saved) { const d = JSON.parse(saved); if (d && d.groups && d.crs) { doc = d; doc.lines = doc.lines || []; doc.otherOverlays = doc.otherOverlays || []; if (/yourWikiDomain/.test(doc.$schema || '')) doc.$schema = SCHEMA; } }
+} catch (e) {}
+ui.active = Object.keys(doc.groups)[0] || null;
+renderAll(); pushHist();
+window.__dm = { get doc() { return doc; }, buildOutput, importDoc, replaceDoc };
+})();
+</script>
+
+</body></html>
