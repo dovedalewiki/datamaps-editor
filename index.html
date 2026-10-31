@@ -182,9 +182,13 @@ code.k{font-family:var(--mono);font-size:11.5px;background:var(--panel2);padding
       <button class="btn" id="b-new" type="button">New map</button>
       <button class="btn" id="b-ex" type="button">Load from Map:Game Map</button>
       <span class="sep"></span>
+      <button class="btn" id="b-login" type="button">Log in to wiki</button>
+      <span class="chip" id="wiki-user" aria-live="polite">Checking wiki login…</span>
+      <span class="sep"></span>
       <button class="btn icon" id="b-undo" type="button" aria-label="Undo" title="Undo (Ctrl+Z)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 3 2.5 6l3 3"/><path d="M2.5 6h6.5a4 4 0 0 1 0 8H6"/></svg></button>
       <button class="btn icon" id="b-redo" type="button" aria-label="Redo" title="Redo (Ctrl+Shift+Z)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 3 3 3-3 3"/><path d="M13.5 6H7a4 4 0 0 0 0 8h3"/></svg></button>
-      <button class="btn primary" id="b-copy" type="button">Copy JSON</button>
+      <button class="btn" id="b-copy" type="button">Copy JSON</button>
+      <button class="btn primary" id="b-publish" type="button">Publish</button>
     </div>
   </header>
 
@@ -291,7 +295,7 @@ code.k{font-family:var(--mono);font-size:11.5px;background:var(--panel2);padding
         <div class="warns" id="warns"></div>
         <div class="sechead"><span>Map source</span><button class="btn small" id="out-copy" type="button">Copy</button></div>
         <textarea id="out" readonly spellcheck="false" aria-label="Generated JSON"></textarea>
-        <p class="note" style="margin-top:8px">Paste this into the <code class="k">Map:</code> page's source editor.</p>
+        <p class="note" style="margin-top:8px">Publish writes this JSON to <code class="k">Map:Game Map</code>. You must be logged in to the wiki.</p>
         <div class="sechead"><span>Load existing JSON</span></div>
         <textarea id="in" spellcheck="false" placeholder="Paste a DataMaps JSON document here to edit it" aria-label="JSON to load"></textarea>
         <div class="btnrow" style="margin-top:6px"><button class="btn" id="b-load" type="button">Load JSON</button></div>
@@ -510,6 +514,37 @@ function buildOutput() {
   return out;
 }
 const currentJSON = () => JSON.stringify(buildOutput(), null, '\t');
+
+function wikiLoginURL() {
+  const returnTo = new URL(location.href);
+  returnTo.hash = '';
+  return 'https://dovedale.wiki/wiki/Special:UserLogin?returnto=' + encodeURIComponent(returnTo.href);
+}
+async function updateWikiUser() {
+  const badge = $('#wiki-user');
+  try {
+    const params = new URLSearchParams({
+      action: 'query',
+      meta: 'userinfo',
+      uiprop: 'name',
+      format: 'json',
+      formatversion: '2',
+      origin: location.origin
+    });
+    const response = await fetch(GAME_MAP_API + '?' + params, { credentials: 'include' });
+    if (!response.ok) throw new Error('Wiki request failed (' + response.status + ').');
+    const data = await response.json();
+    const user = data.query && data.query.userinfo;
+    if (user && user.name && !user.anon) {
+      badge.textContent = 'Logged in: ' + user.name;
+      $('#b-login').textContent = 'Wiki account';
+    } else {
+      badge.textContent = 'Not logged in';
+    }
+  } catch (_) {
+    badge.textContent = 'Wiki login unavailable';
+  }
+}
 
 /* ---------- import ---------- */
 function importDoc(obj) {
@@ -1238,8 +1273,64 @@ async function copyJSON() {
   try { await navigator.clipboard.writeText(text); toast('JSON copied'); }
   catch (_) { setTab('json'); const o = $('#out'); o.focus(); o.select(); toast('Press Ctrl+C to copy the selected JSON'); }
 }
+async function publish() {
+  const errors = validate().filter(([level]) => level === 'e');
+  if (errors.length) { setTab('json'); toast('Fix the errors before publishing.'); return; }
+  if (!window.confirm('Publish this map to Map:Game Map?')) return;
+  const btn = $('#b-publish');
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Publishing…';
+  try {
+    const origin = location.origin;
+    const tokenParams = new URLSearchParams({
+      action: 'query',
+      meta: 'tokens',
+      type: 'csrf',
+      format: 'json',
+      formatversion: '2',
+      origin
+    });
+    const tokenResponse = await fetch(GAME_MAP_API + '?' + tokenParams, { credentials: 'include' });
+    if (!tokenResponse.ok) throw new Error('Wiki request failed (' + tokenResponse.status + ').');
+    const tokenData = await tokenResponse.json();
+    const token = tokenData.query && tokenData.query.tokens && tokenData.query.tokens.csrftoken;
+    if (!token || token === '+\\') throw new Error('Could not get an edit token. Log in to the wiki and try again.');
+
+    const body = new URLSearchParams({
+      action: 'edit',
+      title: 'Map:Game Map',
+      text: currentJSON(),
+      summary: 'Update map using DataMaps Map Editor',
+      token,
+      format: 'json',
+      formatversion: '2',
+      origin
+    });
+    const editResponse = await fetch(GAME_MAP_API, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body
+    });
+    if (!editResponse.ok) throw new Error('Wiki request failed (' + editResponse.status + ').');
+    const editData = await editResponse.json();
+    if (editData.error) throw new Error(editData.error.info || editData.error.code || 'The wiki rejected the edit.');
+    if (!editData.edit || editData.edit.result !== 'Success') throw new Error('The wiki did not confirm the edit.');
+    toast('Published to Map:Game Map');
+  } catch (err) {
+    toast(err.message || 'Could not publish the map.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
 $('#b-copy').addEventListener('click', copyJSON);
 $('#out-copy').addEventListener('click', copyJSON);
+$('#b-publish').addEventListener('click', publish);
+$('#b-login').addEventListener('click', () => {
+  window.open(wikiLoginURL(), '_blank', 'noopener');
+});
 $('#b-load').addEventListener('click', () => {
   try {
     const d = importDoc(JSON.parse($('#in').value));
@@ -1368,6 +1459,7 @@ if (!doc.background.image || doc.background.image === 'GameMap.png') doc.backgro
 ui.active = Object.keys(doc.groups)[0] || null;
 renderAll(); pushHist();
 loadImageUrl(DEFAULT_IMAGE_URL, () => { render(); fit(); });
+updateWikiUser();
 window.__dm = { get doc() { return doc; }, buildOutput, importDoc, replaceDoc };
 })();
 </script>
