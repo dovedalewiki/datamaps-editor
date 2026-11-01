@@ -288,6 +288,7 @@ code.k{font-family:var(--mono);font-size:11.5px;background:var(--panel2);padding
           <div class="colorrow"><input type="color" id="bd-color" value="#0b120d"><code id="bd-val">none</code><button class="btn small" id="bd-clear" type="button">Clear</button></div>
         </div>
         <label class="chk"><input type="checkbox" id="show-coords"> Show cursor coordinates on the wiki</label>
+        <label class="chk"><input type="checkbox" id="enable-search" checked> Enable search on the wiki</label>
       </div>
 
       <div class="tabpanel" id="p-json" role="tabpanel" aria-labelledby="tab-json" hidden>
@@ -339,7 +340,7 @@ function normalizeWikiImageName(value) {
 const defaultCrs = () => ({ order: 'latlon', topLeft: [100, 0], bottomRight: [0, 100] });
 const blankDoc = () => ({
   $schema: SCHEMA, crs: defaultCrs(), useDefaultCrs: true,
-  background: { image: DEFAULT_IMAGE_NAME }, settings: { backdropColor: '', showCoordinates: true, zoom: { ...DEFAULT_ZOOM } },
+  background: { image: DEFAULT_IMAGE_NAME }, settings: { backdropColor: '', showCoordinates: true, enableSearch: true, zoom: { ...DEFAULT_ZOOM } },
   groups: {}, markers: {}, lines: [], otherOverlays: [], extra: {}
 });
 function exampleDoc() {
@@ -513,7 +514,8 @@ function buildOutput() {
   const settings = doc.settings || {};
   if (settings.backdropColor) s.backdropColor = settings.backdropColor;
   if (settings.showCoordinates === false) s.showCoordinates = false;
-  for (const [k, v] of Object.entries(settings)) if (!['backdropColor', 'showCoordinates', 'zoom'].includes(k)) s[k] = v;
+  s.enableSearch = settings.enableSearch !== false;
+  for (const [k, v] of Object.entries(settings)) if (!['backdropColor', 'showCoordinates', 'enableSearch', 'zoom'].includes(k)) s[k] = v;
   s.zoom = { ...DEFAULT_ZOOM, ...(settings.zoom && typeof settings.zoom === 'object' && !Array.isArray(settings.zoom) ? settings.zoom : {}) };
   if (Object.keys(s).length) out.settings = s;
   const groups = {};
@@ -603,6 +605,7 @@ function importDoc(obj) {
   }
   if (obj.settings && typeof obj.settings === 'object') {
     d.settings = { backdropColor: '', showCoordinates: true, ...obj.settings };
+    d.settings.enableSearch = obj.settings.enableSearch !== false;
     d.settings.zoom = { ...DEFAULT_ZOOM, ...(obj.settings.zoom && typeof obj.settings.zoom === 'object' && !Array.isArray(obj.settings.zoom) ? obj.settings.zoom : {}) };
   }
   if (obj.groups) {
@@ -890,6 +893,7 @@ function syncMapTab() {
   const bc = doc.settings.backdropColor;
   $('#bd-color').value = hex6(bc, '#0b120d'); $('#bd-val').textContent = bc || 'none';
   $('#show-coords').checked = doc.settings.showCoordinates !== false;
+  $('#enable-search').checked = doc.settings.enableSearch !== false;
   $('#pre-px').disabled = !bgPreview();
 }
 function renderJSON() { $('#out').value = currentJSON(); renderWarns(); }
@@ -1294,6 +1298,7 @@ $('#pre-px').addEventListener('click', () => { const im = bgPreview(); if (im) p
 $('#bd-color').addEventListener('input', e => { doc.settings.backdropColor = e.target.value; $('#bd-val').textContent = e.target.value; changed(); });
 $('#bd-clear').addEventListener('click', () => { doc.settings.backdropColor = ''; syncMapTab(); changed(); });
 $('#show-coords').addEventListener('change', e => { doc.settings.showCoordinates = e.target.checked; changed(); });
+$('#enable-search').addEventListener('change', e => { doc.settings.enableSearch = e.target.checked; changed(); });
 
 /* ---------- json tab, header, toolbar ---------- */
 async function copyJSON() {
