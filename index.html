@@ -320,6 +320,7 @@ const DEFAULT_IMAGE_NAME = 'File:GameMap.png';
 const GAME_MAP_API = 'https://dovedale.wiki/api.php';
 const PALETTE = ['#7c5cd6','#e07b39','#2a9d8f','#d94f70','#3d7be0','#8a9a1b','#c58a00','#5b6b7c'];
 const KNOWN_TOP = ['$schema','crs','background','backgrounds','settings','groups','markers'];
+const DEFAULT_ZOOM = { min: 0.05, max: 10 };
 function normalizeWikiImageName(value) {
   if (typeof value !== 'string') return value;
   const image = value.trim();
@@ -338,7 +339,7 @@ function normalizeWikiImageName(value) {
 const defaultCrs = () => ({ order: 'latlon', topLeft: [100, 0], bottomRight: [0, 100] });
 const blankDoc = () => ({
   $schema: SCHEMA, crs: defaultCrs(), useDefaultCrs: true,
-  background: { image: DEFAULT_IMAGE_NAME }, settings: { backdropColor: '', showCoordinates: true },
+  background: { image: DEFAULT_IMAGE_NAME }, settings: { backdropColor: '', showCoordinates: true, zoom: { ...DEFAULT_ZOOM } },
   groups: {}, markers: {}, lines: [], otherOverlays: [], extra: {}
 });
 function exampleDoc() {
@@ -509,9 +510,11 @@ function buildOutput() {
     else if (ks.length) out.background = orderKeys(o, ['image', 'at', 'pixelated', 'associatedLayer', 'overlays']);
   }
   const s = {};
-  if (doc.settings.backdropColor) s.backdropColor = doc.settings.backdropColor;
-  if (doc.settings.showCoordinates === false) s.showCoordinates = false;
-  for (const [k, v] of Object.entries(doc.settings)) if (!['backdropColor', 'showCoordinates'].includes(k)) s[k] = v;
+  const settings = doc.settings || {};
+  if (settings.backdropColor) s.backdropColor = settings.backdropColor;
+  if (settings.showCoordinates === false) s.showCoordinates = false;
+  for (const [k, v] of Object.entries(settings)) if (!['backdropColor', 'showCoordinates', 'zoom'].includes(k)) s[k] = v;
+  s.zoom = { ...DEFAULT_ZOOM, ...(settings.zoom && typeof settings.zoom === 'object' && !Array.isArray(settings.zoom) ? settings.zoom : {}) };
   if (Object.keys(s).length) out.settings = s;
   const groups = {};
   for (const [id, g] of Object.entries(doc.groups)) groups[id] = exportGroup(g);
@@ -598,7 +601,10 @@ function importDoc(obj) {
       ? { ...bg, ...(bg.image ? { image: normalizeWikiImageName(bg.image) } : {}) }
       : bg);
   }
-  if (obj.settings && typeof obj.settings === 'object') d.settings = { backdropColor: '', showCoordinates: true, ...obj.settings };
+  if (obj.settings && typeof obj.settings === 'object') {
+    d.settings = { backdropColor: '', showCoordinates: true, ...obj.settings };
+    d.settings.zoom = { ...DEFAULT_ZOOM, ...(obj.settings.zoom && typeof obj.settings.zoom === 'object' && !Array.isArray(obj.settings.zoom) ? obj.settings.zoom : {}) };
+  }
   if (obj.groups) {
     if (typeof obj.groups !== 'object' || Array.isArray(obj.groups)) throw new Error('"groups" must be an object keyed by group ID.');
     d.groups = obj.groups;
