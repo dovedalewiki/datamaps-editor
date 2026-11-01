@@ -316,16 +316,29 @@ const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const rnd = n => Math.round(n * 1000) / 1000;
 const ID_RE = /^[A-Za-z0-9_-]+$/;
 const SCHEMA = 'https://dovedale.wiki/extensions/DataMaps/schemas/v17.json';
-const DEFAULT_IMAGE_URL = 'https://dovedale.wiki/wiki/File:GameMap.png';
+const DEFAULT_IMAGE_NAME = 'File:GameMap.png';
 const GAME_MAP_API = 'https://dovedale.wiki/api.php';
 const PALETTE = ['#7c5cd6','#e07b39','#2a9d8f','#d94f70','#3d7be0','#8a9a1b','#c58a00','#5b6b7c'];
 const KNOWN_TOP = ['$schema','crs','background','backgrounds','settings','groups','markers'];
+function normalizeWikiImageName(value) {
+  if (typeof value !== 'string') return value;
+  const image = value.trim();
+  if (image === 'GameMap.png') return DEFAULT_IMAGE_NAME;
+  try {
+    const url = new URL(image);
+    if (url.hostname !== 'dovedale.wiki') return value;
+    const path = decodeURIComponent(url.pathname);
+    if (path.startsWith('/wiki/File:')) return path.slice('/wiki/'.length);
+    if (path.startsWith('/wiki/Special:FilePath/')) return 'File:' + path.slice('/wiki/Special:FilePath/'.length);
+  } catch (_) {}
+  return value;
+}
 
 /* ---------- document model ---------- */
 const defaultCrs = () => ({ order: 'latlon', topLeft: [100, 0], bottomRight: [0, 100] });
 const blankDoc = () => ({
   $schema: SCHEMA, crs: defaultCrs(), useDefaultCrs: true,
-  background: { image: DEFAULT_IMAGE_URL }, settings: { backdropColor: '', showCoordinates: true },
+  background: { image: DEFAULT_IMAGE_NAME }, settings: { backdropColor: '', showCoordinates: true },
   groups: {}, markers: {}, lines: [], otherOverlays: [], extra: {}
 });
 function exampleDoc() {
@@ -488,7 +501,7 @@ function buildOutput() {
   const bg = doc.background || {};
   const bgKeys = Object.keys(bg).filter(k => bg[k] !== '' && bg[k] !== undefined && !(k === 'pixelated' && bg[k] === false));
   if (!doc.extra.backgrounds) {
-    const o = Object.fromEntries(bgKeys.map(k => [k, bg[k]]));
+    const o = Object.fromEntries(bgKeys.map(k => [k, k === 'image' ? normalizeWikiImageName(bg[k]) : bg[k]]));
     const ov = [...exportLines(), ...(doc.otherOverlays || [])];
     if (ov.length && (o.image || o.tiles)) o.overlays = ov;
     const ks = Object.keys(o);
@@ -510,7 +523,13 @@ function buildOutput() {
     if (arr.length) markers[id] = arr;
   }
   if (Object.keys(markers).length) out.markers = markers;
-  for (const [k, v] of Object.entries(doc.extra)) out[k] = v;
+  for (const [k, v] of Object.entries(doc.extra)) {
+    out[k] = k === 'backgrounds' && Array.isArray(v)
+      ? v.map(bg => bg && typeof bg === 'object'
+        ? { ...bg, ...(bg.image ? { image: normalizeWikiImageName(bg.image) } : {}) }
+        : bg)
+      : v;
+  }
   return out;
 }
 const currentJSON = () => JSON.stringify(buildOutput(), null, '\t');
@@ -557,9 +576,10 @@ function importDoc(obj) {
       topLeft: num(obj.crs.topLeft, [0, 0]), bottomRight: num(obj.crs.bottomRight, [100, 100]) };
     d.useDefaultCrs = false;
   }
-  if (typeof obj.background === 'string') d.background = { image: obj.background };
+  if (typeof obj.background === 'string') d.background = { image: normalizeWikiImageName(obj.background) };
   else if (obj.background && typeof obj.background === 'object') d.background = obj.background;
-  if (!d.background.image || d.background.image === 'GameMap.png') d.background.image = DEFAULT_IMAGE_URL;
+  d.background.image = normalizeWikiImageName(d.background.image);
+  if (!d.background.image) d.background.image = DEFAULT_IMAGE_NAME;
   if (Array.isArray(d.background.overlays)) {
     const xy = d.crs.order === 'xy';
     d.background.overlays.forEach(o => {
@@ -573,7 +593,11 @@ function importDoc(obj) {
     });
   }
   delete d.background.overlays;
-  if (Array.isArray(obj.backgrounds)) d.extra.backgrounds = obj.backgrounds;
+  if (Array.isArray(obj.backgrounds)) {
+    d.extra.backgrounds = obj.backgrounds.map(bg => bg && typeof bg === 'object'
+      ? { ...bg, ...(bg.image ? { image: normalizeWikiImageName(bg.image) } : {}) }
+      : bg);
+  }
   if (obj.settings && typeof obj.settings === 'object') d.settings = { backdropColor: '', showCoordinates: true, ...obj.settings };
   if (obj.groups) {
     if (typeof obj.groups !== 'object' || Array.isArray(obj.groups)) throw new Error('"groups" must be an object keyed by group ID.');
@@ -939,7 +963,7 @@ function loadImageUrl(url, cb) {
     cb(url, ui.imgs[url]);
   };
   img.onerror = () => toast('Could not load the default map image.');
-  img.src = url === DEFAULT_IMAGE_URL ? 'https://dovedale.wiki/wiki/Special:FilePath/GameMap.png' : url;
+  img.src = url === DEFAULT_IMAGE_NAME ? 'https://dovedale.wiki/wiki/Special:FilePath/GameMap.png' : url;
 }
 function loadImageFile(file, cb) {
   if (!file || !/^image\//.test(file.type)) { toast('That file is not an image.'); return; }
@@ -1453,10 +1477,16 @@ try {
   const saved = localStorage.getItem(DRAFT);
   if (saved) { const d = JSON.parse(saved); if (d && d.groups && d.crs) { doc = d; doc.lines = doc.lines || []; doc.otherOverlays = doc.otherOverlays || []; if (/yourWikiDomain/.test(doc.$schema || '')) doc.$schema = SCHEMA; } }
 } catch (e) {}
-if (!doc.background.image || doc.background.image === 'GameMap.png') doc.background.image = DEFAULT_IMAGE_URL;
+doc.background.image = normalizeWikiImageName(doc.background.image);
+if (!doc.background.image) doc.background.image = DEFAULT_IMAGE_NAME;
+if (Array.isArray(doc.extra.backgrounds)) {
+  doc.extra.backgrounds = doc.extra.backgrounds.map(bg => bg && typeof bg === 'object'
+    ? { ...bg, ...(bg.image ? { image: normalizeWikiImageName(bg.image) } : {}) }
+    : bg);
+}
 ui.active = Object.keys(doc.groups)[0] || null;
 renderAll(); pushHist();
-loadImageUrl(DEFAULT_IMAGE_URL, () => { render(); fit(); });
+loadImageUrl(DEFAULT_IMAGE_NAME, () => { render(); fit(); });
 updateWikiUser();
 window.__dm = { get doc() { return doc; }, buildOutput, importDoc, replaceDoc };
 })();
