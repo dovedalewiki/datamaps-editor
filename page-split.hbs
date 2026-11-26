@@ -1,0 +1,8 @@
+{{> header}}
+<main id="main" class="reading-page">
+  {{#page}}
+    <article class="article article--split"><header class="article-header"><div class="split-copy"><p class="eyebrow">A little more about us</p><h1>{{title}}</h1>{{#if @config.page.intro}}<p class="article-intro">{{@config.page.intro}}</p>{{/if}}</div>{{#if featuredImage}}<figure class="article-cover{{#if @config.page.headerImageMode}} article-cover-full{{/if}}"><img src="{{featuredImage.url}}" alt="{{featuredImage.alt}}" fetchpriority="high"></figure>{{/if}}</header><div class="article-body">{{{text}}}</div></article>
+  {{/page}}
+</main>
+{{> cta}}
+{{> footer}}

@@ -1,0 +1,613 @@
+{
+  "name": "Reveral",
+  "version": "1.0.1",
+  "author": "Dovedale Wiki",
+  "description": "A modular product-focused theme for SaaS, technology and digital services.",
+  "menus": {
+    "mainMenu": "Main menu",
+    "footerMenu": "Footer menu"
+  },
+  "postTemplates": {
+    "compact": "Compact reading layout",
+    "split": "Split feature layout"
+  },
+  "pageTemplates": {
+    "compact": "Compact page layout",
+    "split": "Split feature layout"
+  },
+  "tagTemplates": {
+    "grid": "Grid archive"
+  },
+  "authorTemplates": {
+    "grid": "Grid archive"
+  },
+  "supportedFeatures": {
+    "authorImages": true,
+    "authorPages": true,
+    "blockEditor": true,
+    "errorPage": true,
+    "searchPage": true,
+    "tagImages": true,
+    "tagsList": true,
+    "pages": true,
+    "postsPage": true
+  },
+  "renderer": {
+    "create404page": true,
+    "nameFor404page": "404.html"
+  },
+  "config": [
+    {
+      "name": "logo",
+      "label": "Website logo",
+      "value": "",
+      "type": "media",
+      "upload": true
+    },
+    {
+      "name": "postsPerPage",
+      "label": "Posts per page",
+      "value": 6,
+      "type": "number"
+    },
+    {
+      "name": "tagsPostsPerPage",
+      "label": "Tag archive posts per page",
+      "value": 9,
+      "type": "number"
+    },
+    {
+      "name": "authorsPostsPerPage",
+      "label": "Author archive posts per page",
+      "value": 9,
+      "type": "number"
+    },
+    {
+      "name": "excerptLength",
+      "label": "Excerpt length",
+      "value": 24,
+      "type": "number"
+    }
+  ],
+  "customConfig": [
+    {
+      "name": "colorMode",
+      "label": "Color mode",
+      "group": "Colors",
+      "value": "auto",
+      "type": "select",
+      "options": [
+        { "label": "Automatic", "value": "auto" },
+        { "label": "Light", "value": "light" },
+        { "label": "Dark", "value": "dark" }
+      ]
+    },
+    {
+      "name": "brandColor",
+      "label": "Accent color",
+      "group": "Colors",
+      "value": "#6558f5",
+      "type": "colorpicker",
+      "outputFormat": "HEX"
+    },
+    {
+      "name": "lightBackground",
+      "label": "Light background",
+      "group": "Colors",
+      "value": "#f8f8fb",
+      "type": "colorpicker",
+      "outputFormat": "HEX"
+    },
+    {
+      "name": "lightText",
+      "label": "Light text",
+      "group": "Colors",
+      "value": "#55566a",
+      "type": "colorpicker",
+      "outputFormat": "HEX"
+    },
+    {
+      "name": "lightHeading",
+      "label": "Light headings",
+      "group": "Colors",
+      "value": "#191a2b",
+      "type": "colorpicker",
+      "outputFormat": "HEX"
+    },
+    {
+      "name": "darkBackground",
+      "label": "Dark background",
+      "group": "Colors",
+      "value": "#11121a",
+      "type": "colorpicker",
+      "outputFormat": "HEX"
+    },
+    {
+      "name": "darkText",
+      "label": "Dark text",
+      "group": "Colors",
+      "value": "#b9bac8",
+      "type": "colorpicker",
+      "outputFormat": "HEX"
+    },
+    {
+      "name": "darkHeading",
+      "label": "Dark headings",
+      "group": "Colors",
+      "value": "#f5f5fb",
+      "type": "colorpicker",
+      "outputFormat": "HEX"
+    },
+    {
+      "name": "heroEyebrow",
+      "label": "Hero eyebrow",
+      "group": "Homepage",
+      "value": "A clearer way to build",
+      "type": "text"
+    },
+    {
+      "name": "heroTitle",
+      "label": "Hero heading",
+      "group": "Homepage",
+      "value": "Make your next big idea happen.",
+      "type": "text"
+    },
+    {
+      "name": "heroText",
+      "label": "Hero introduction",
+      "group": "Homepage",
+      "value": "The tools, insight, and momentum to turn complex work into products people love.",
+      "type": "textarea"
+    },
+    {
+      "name": "heroImage",
+      "label": "Hero image (optional)",
+      "group": "Homepage",
+      "value": "",
+      "type": "upload"
+    },
+    {
+      "name": "heroImageAlt",
+      "label": "Hero image description",
+      "group": "Homepage",
+      "value": "Product interface preview",
+      "type": "text"
+    },
+    {
+      "name": "primaryAction",
+      "label": "Primary button label",
+      "group": "Homepage",
+      "value": "Explore the platform",
+      "type": "text"
+    },
+    {
+      "name": "primaryActionUrl",
+      "label": "Primary button URL",
+      "group": "Homepage",
+      "value": "#features",
+      "type": "text"
+    },
+    {
+      "name": "secondaryAction",
+      "label": "Secondary button label",
+      "group": "Homepage",
+      "value": "Talk to our team",
+      "type": "text"
+    },
+    {
+      "name": "secondaryActionUrl",
+      "label": "Secondary button URL",
+      "group": "Homepage",
+      "value": "#contact",
+      "type": "text"
+    },
+    {
+      "name": "proofLabel",
+      "label": "Customer proof label",
+      "group": "Homepage",
+      "value": "Trusted by teams at",
+      "type": "text"
+    },
+    {
+      "name": "proofCompanies",
+      "label": "Customer names",
+      "group": "Homepage",
+      "type": "repeater",
+      "value": [
+        { "company": "northstar" },
+        { "company": "arcadia" },
+        { "company": "Layer" },
+        { "company": "Meridian" }
+      ],
+      "maxCount": 8,
+      "structure": [
+        {
+          "name": "company",
+          "label": "Company name",
+          "type": "text",
+          "value": "",
+          "width": 100
+        }
+      ]
+    },
+    {
+      "name": "featureHighlights",
+      "label": "Product summary icons",
+      "group": "Homepage",
+      "type": "repeater",
+      "value": [
+        { "symbol": "✳", "label": "Thoughtful design", "tooltip": "Made to keep the busywork out of your way." },
+        { "symbol": "↗", "label": "Clear progress", "tooltip": "Know what is moving and what needs attention." },
+        { "symbol": "⌘", "label": "Better together", "tooltip": "Keep the whole team moving in the same direction." },
+        { "symbol": "◉", "label": "Privacy first", "tooltip": "Your work stays yours, with security built in." }
+      ],
+      "maxCount": 8,
+      "structure": [
+        { "name": "symbol", "label": "Icon or symbol", "type": "text", "value": "✳", "width": 20 },
+        { "name": "label", "label": "Short label", "type": "text", "value": "", "width": 35 },
+        { "name": "tooltip", "label": "Tooltip text", "type": "text", "value": "", "width": 45 }
+      ]
+    },
+    {
+      "name": "featuresTitle",
+      "label": "Features heading",
+      "group": "Homepage",
+      "value": "Everything you need to move forward",
+      "type": "text"
+    },
+    {
+      "name": "featuresIntro",
+      "label": "Features introduction",
+      "group": "Homepage",
+      "value": "A focused set of capabilities that gives your team more room to do its best work.",
+      "type": "textarea"
+    },
+    {
+      "name": "featureCards",
+      "label": "Feature cards",
+      "group": "Homepage",
+      "type": "repeater",
+      "value": [
+        {
+          "eyebrow": "01 / Plan",
+          "title": "Turn complexity into clarity",
+          "description": "Bring your goals, people, and priorities into one shared view. Everyone knows what matters and what comes next.",
+          "symbol": "↗",
+          "imageUrl": ""
+        },
+        {
+          "eyebrow": "02 / Build",
+          "title": "Create with confidence",
+          "description": "Move from first sketch to a polished release with a flexible workspace designed around the way your team works.",
+          "symbol": "✳",
+          "imageUrl": ""
+        },
+        {
+          "eyebrow": "03 / Grow",
+          "title": "Learn as you go",
+          "description": "See what is working, share progress, and make better decisions with useful signals built into every step.",
+          "symbol": "⌁",
+          "imageUrl": ""
+        }
+      ],
+      "maxCount": 8,
+      "structure": [
+        { "name": "eyebrow", "label": "Small label", "type": "text", "value": "", "width": 50 },
+        { "name": "symbol", "label": "Icon or symbol", "type": "text", "value": "✳", "width": 50 },
+        { "name": "title", "label": "Title", "type": "text", "value": "", "width": 100 },
+        { "name": "description", "label": "Description", "type": "textarea", "value": "", "width": 100 },
+        { "name": "imageUrl", "label": "Image URL (optional)", "type": "text", "value": "", "width": 100 }
+      ]
+    },
+    {
+      "name": "mediaTitle",
+      "label": "Media section heading",
+      "group": "Homepage",
+      "value": "A better view of your work",
+      "type": "text"
+    },
+    {
+      "name": "mediaIntro",
+      "label": "Media section introduction",
+      "group": "Homepage",
+      "value": "See how the pieces come together. Switch between product views, workflows, and customer stories.",
+      "type": "textarea"
+    },
+    {
+      "name": "mediaRatio",
+      "label": "Desktop media ratio",
+      "group": "Homepage",
+      "value": "16 / 9",
+      "type": "select",
+      "options": [
+        { "label": "16:9 widescreen", "value": "16 / 9" },
+        { "label": "3:2 landscape", "value": "3 / 2" },
+        { "label": "1:1 square", "value": "1 / 1" }
+      ]
+    },
+    {
+      "name": "mediaRatioMobile",
+      "label": "Mobile media ratio",
+      "group": "Homepage",
+      "value": "4 / 3",
+      "type": "select",
+      "options": [
+        { "label": "4:3 landscape", "value": "4 / 3" },
+        { "label": "1:1 square", "value": "1 / 1" },
+        { "label": "3:4 portrait", "value": "3 / 4" }
+      ]
+    },
+    {
+      "name": "mediaFit",
+      "label": "Media fit",
+      "group": "Homepage",
+      "value": "cover",
+      "type": "select",
+      "options": [
+        { "label": "Fill frame", "value": "cover" },
+        { "label": "Show full image", "value": "contain" }
+      ]
+    },
+    {
+      "name": "mediaTabs",
+      "label": "Media tabs",
+      "group": "Homepage",
+      "type": "repeater",
+      "value": [
+        {
+          "label": "Overview",
+          "description": "Your whole workspace, in one calm and considered view.",
+          "mediaUrl": "",
+          "posterUrl": "",
+          "videoUrl": ""
+        },
+        {
+          "label": "Collaboration",
+          "description": "Good ideas get better when everyone can contribute.",
+          "mediaUrl": "",
+          "posterUrl": "",
+          "videoUrl": ""
+        },
+        {
+          "label": "Insights",
+          "description": "Make the next decision with your best information close at hand.",
+          "mediaUrl": "",
+          "posterUrl": "",
+          "videoUrl": ""
+        }
+      ],
+      "maxCount": 10,
+      "structure": [
+        { "name": "label", "label": "Tab label", "type": "text", "value": "", "width": 50 },
+        { "name": "description", "label": "Description", "type": "textarea", "value": "", "width": 50 },
+        { "name": "mediaUrl", "label": "Image URL", "type": "text", "value": "", "width": 100 },
+        { "name": "videoUrl", "label": "Self-hosted video URL", "type": "text", "value": "", "width": 50 },
+        { "name": "posterUrl", "label": "Video poster URL", "type": "text", "value": "", "width": 50 }
+      ]
+    },
+    {
+      "name": "media2Title",
+      "label": "Media section 2 heading",
+      "group": "Homepage",
+      "value": "Made for the way teams work",
+      "type": "text"
+    },
+    {
+      "name": "media2Intro",
+      "label": "Media section 2 introduction",
+      "group": "Homepage",
+      "value": "Bring your team together around a shared plan and clear next steps.",
+      "type": "textarea"
+    },
+    {
+      "name": "mediaTabs2",
+      "label": "Media section 2 tabs",
+      "group": "Homepage",
+      "type": "repeater",
+      "value": [
+        { "label": "Shared plans", "description": "Keep priorities and progress visible to everyone.", "mediaUrl": "", "posterUrl": "", "videoUrl": "" },
+        { "label": "Team spaces", "description": "Give every project a home that feels easy to find.", "mediaUrl": "", "posterUrl": "", "videoUrl": "" }
+      ],
+      "maxCount": 10,
+      "structure": [
+        { "name": "label", "label": "Tab label", "type": "text", "value": "", "width": 50 },
+        { "name": "description", "label": "Description", "type": "textarea", "value": "", "width": 50 },
+        { "name": "mediaUrl", "label": "Image URL", "type": "text", "value": "", "width": 100 },
+        { "name": "videoUrl", "label": "Self-hosted video URL", "type": "text", "value": "", "width": 50 },
+        { "name": "posterUrl", "label": "Video poster URL", "type": "text", "value": "", "width": 50 }
+      ]
+    },
+    {
+      "name": "media3Title",
+      "label": "Media section 3 heading",
+      "group": "Homepage",
+      "value": "Small details. Big difference.",
+      "type": "text"
+    },
+    {
+      "name": "media3Intro",
+      "label": "Media section 3 introduction",
+      "group": "Homepage",
+      "value": "Explore the details that make a good day of work feel effortless.",
+      "type": "textarea"
+    },
+    {
+      "name": "mediaTabs3",
+      "label": "Media section 3 tabs",
+      "group": "Homepage",
+      "type": "repeater",
+      "value": [
+        { "label": "Focus time", "description": "Make room for deep work and fewer distractions.", "mediaUrl": "", "posterUrl": "", "videoUrl": "" },
+        { "label": "Shared wins", "description": "Celebrate the progress your team makes together.", "mediaUrl": "", "posterUrl": "", "videoUrl": "" }
+      ],
+      "maxCount": 10,
+      "structure": [
+        { "name": "label", "label": "Tab label", "type": "text", "value": "", "width": 50 },
+        { "name": "description", "label": "Description", "type": "textarea", "value": "", "width": 50 },
+        { "name": "mediaUrl", "label": "Image URL", "type": "text", "value": "", "width": 100 },
+        { "name": "videoUrl", "label": "Self-hosted video URL", "type": "text", "value": "", "width": 50 },
+        { "name": "posterUrl", "label": "Video poster URL", "type": "text", "value": "", "width": 50 }
+      ]
+    },
+    {
+      "name": "valuesTitle",
+      "label": "Values section heading",
+      "group": "Homepage",
+      "value": "Built around what matters",
+      "type": "text"
+    },
+    {
+      "name": "productValues",
+      "label": "Product values",
+      "group": "Homepage",
+      "type": "repeater",
+      "value": [
+        { "symbol": "◇", "title": "Thoughtful by design", "description": "Every detail earns its place. Less friction means more focus for meaningful work." },
+        { "symbol": "⌘", "title": "Better together", "description": "Great work is a team sport. We build tools that make collaboration feel natural." },
+        { "symbol": "◉", "title": "Trust, always", "description": "Your work belongs to you. Privacy and security are part of the product, not add-ons." }
+      ],
+      "maxCount": 8,
+      "structure": [
+        { "name": "symbol", "label": "Icon or symbol", "type": "text", "value": "◇", "width": 25 },
+        { "name": "title", "label": "Title", "type": "text", "value": "", "width": 75 },
+        { "name": "description", "label": "Description", "type": "textarea", "value": "", "width": 100 }
+      ]
+    },
+    {
+      "name": "insightsTitle",
+      "label": "Insights heading",
+      "group": "Homepage",
+      "value": "Ideas worth sharing",
+      "type": "text"
+    },
+    {
+      "name": "insightsIntro",
+      "label": "Insights introduction",
+      "group": "Homepage",
+      "value": "Perspectives, product notes, and lessons from the teams doing the work.",
+      "type": "textarea"
+    },
+    {
+      "name": "ctaTitle",
+      "label": "Site-wide CTA heading",
+      "group": "Call to action",
+      "value": "Ready to make something great?",
+      "type": "text"
+    },
+    {
+      "name": "ctaText",
+      "label": "Site-wide CTA supporting text",
+      "group": "Call to action",
+      "value": "Tell us what you are building. We would love to help you get there.",
+      "type": "textarea"
+    },
+    {
+      "name": "ctaButton",
+      "label": "Site-wide CTA button",
+      "group": "Call to action",
+      "value": "Start a conversation",
+      "type": "text"
+    },
+    {
+      "name": "ctaUrl",
+      "label": "Site-wide CTA URL",
+      "group": "Call to action",
+      "value": "mailto:hello@example.com",
+      "type": "text"
+    },
+    {
+      "name": "ctaStyle",
+      "label": "CTA appearance",
+      "group": "Call to action",
+      "value": "dark",
+      "type": "select",
+      "options": [
+        { "label": "Dark", "value": "dark" },
+        { "label": "Light", "value": "light" }
+      ]
+    },
+    {
+      "name": "ctaNotice",
+      "label": "Optional CTA notice",
+      "group": "Call to action",
+      "value": "",
+      "type": "text"
+    },
+    {
+      "name": "archiveLayout",
+      "label": "Tag and author archive layout",
+      "group": "Archive and reading",
+      "value": "list",
+      "type": "select",
+      "options": [
+        { "label": "Alternating list", "value": "list" },
+        { "label": "Grid", "value": "grid" }
+      ]
+    },
+    {
+      "name": "archiveColumns",
+      "label": "Grid columns",
+      "group": "Archive and reading",
+      "value": "3",
+      "type": "select",
+      "options": [
+        { "label": "Two columns", "value": "2" },
+        { "label": "Three columns", "value": "3" }
+      ]
+    },
+    {
+      "name": "showPostAuthor",
+      "label": "Show author on cards",
+      "group": "Archive and reading",
+      "value": true,
+      "type": "checkbox"
+    },
+    {
+      "name": "showPostDate",
+      "label": "Show date on cards",
+      "group": "Archive and reading",
+      "value": true,
+      "type": "checkbox"
+    }
+  ],
+  "postConfig": [
+    {
+      "name": "intro",
+      "label": "Introductory text",
+      "value": "",
+      "type": "textarea"
+    },
+    {
+      "name": "headerImageMode",
+      "label": "Use a full-width featured image",
+      "value": false,
+      "type": "checkbox"
+    }
+  ],
+  "pageConfig": [
+    {
+      "name": "intro",
+      "label": "Introductory text",
+      "value": "",
+      "type": "textarea"
+    },
+    {
+      "name": "headerImageMode",
+      "label": "Use a full-width featured image",
+      "value": false,
+      "type": "checkbox"
+    }
+  ],
+  "files": {
+    "assetsPath": "assets",
+    "partialsPath": "partials",
+    "useDynamicAssets": false,
+    "responsiveImages": {
+      "featuredImages": {
+        "small": { "width": 480, "height": 320, "crop": true },
+        "medium": { "width": 960, "height": 640, "crop": true },
+        "large": { "width": 1440, "height": 960, "crop": true }
+      }
+    }
+  }
+}
