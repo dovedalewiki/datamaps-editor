@@ -1,0 +1,19 @@
+{{> header}}
+<main id="main" class="reading-page">
+  {{#post}}
+    <article class="article article--split">
+      <header class="article-header">
+        <div class="split-copy">
+          {{#if mainTag}}<a class="eyebrow" href="{{mainTag.url}}">{{mainTag.name}}</a>{{/if}}
+          <h1>{{title}}</h1>
+          {{#if @config.post.intro}}<p class="article-intro">{{@config.post.intro}}</p>{{/if}}
+          <div class="article-meta">{{#if @config.custom.showPostAuthor}}{{#author}}<a href="{{url}}">{{name}}</a>{{/author}}{{/if}}{{#if @config.custom.showPostDate}}<time>{{date createdAt "MMM D, YYYY"}}</time>{{/if}}</div>
+        </div>
+        {{#if featuredImage}}<figure class="article-cover"><img src="{{featuredImage.url}}" alt="{{featuredImage.alt}}" fetchpriority="high"></figure>{{/if}}
+      </header>
+      <div class="article-body">{{> post-body}}</div>
+    </article>
+  {{/post}}
+</main>
+{{> cta}}
+{{> footer}}

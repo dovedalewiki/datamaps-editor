@@ -1,0 +1,15 @@
+<article class="post-card">
+  <a class="post-card-link" href="{{url}}">
+    {{#if featuredImage}}<div class="post-card-image"><img src="{{featuredImage.url}}" alt="{{featuredImage.alt}}" loading="lazy"></div>{{else}}<div class="post-card-image post-card-placeholder"><span>r.</span></div>{{/if}}
+    <div class="post-card-content">
+      {{#if mainTag}}<span class="card-tag">{{mainTag.name}}</span>{{/if}}
+      <h3>{{title}}</h3>
+      {{#if excerpt}}<p>{{excerpt}}</p>{{/if}}
+      <div class="post-card-meta">
+        {{#if @config.custom.showPostAuthor}}{{#author}}<span>{{name}}</span>{{/author}}{{/if}}
+        {{#if @config.custom.showPostDate}}<time>{{date createdAt "MMM D, YYYY"}}</time>{{/if}}
+        <span class="card-arrow" aria-hidden="true">↗</span>
+      </div>
+    </div>
+  </a>
+</article>

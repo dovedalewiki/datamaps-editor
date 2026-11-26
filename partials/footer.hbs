@@ -1,0 +1,13 @@
+    <footer class="site-footer">
+      <div class="footer-inner section-wrap">
+        <a class="site-brand" href="{{@website.url}}"><span class="brand-mark">r</span><span>{{@website.name}}</span></a>
+        <p>Thoughtful tools for ambitious teams.</p>
+        {{#if menus.footerMenu}}{{> menu menus.footerMenu}}{{/if}}
+        <small>© {{@website.name}}. Built for what’s next.</small>
+      </div>
+    </footer>
+  </div>
+  {{js "main.js"}}
+  {{{@footer}}}
+</body>
+</html>

@@ -1,0 +1,27 @@
+<section class="media-section section-space" id="{{sectionId}}" style="--media-ratio:{{@config.custom.mediaRatio}};--media-ratio-mobile:{{@config.custom.mediaRatioMobile}};--media-fit:{{@config.custom.mediaFit}}">
+  <div class="section-wrap">
+    <div class="section-heading section-heading-centered">
+      <div><p class="eyebrow">Inside the platform</p><h2>{{sectionTitle}}</h2></div>
+      <p>{{sectionIntro}}</p>
+    </div>
+    <div class="media-tabs" role="tablist" aria-label="{{sectionTitle}}">
+      {{#each tabs}}
+        <button type="button" class="media-tab" role="tab" id="{{../sectionId}}-tab-{{@index}}" aria-controls="{{../sectionId}}-panel-{{@index}}" aria-selected="{{#if @first}}true{{else}}false{{/if}}" tabindex="{{#if @first}}0{{else}}-1{{/if}}">{{label}}</button>
+      {{/each}}
+    </div>
+    <div class="media-panels">
+      {{#each tabs}}
+        <div class="media-panel" role="tabpanel" id="{{../sectionId}}-panel-{{@index}}" aria-labelledby="{{../sectionId}}-tab-{{@index}}" {{#unless @first}}hidden{{/unless}}>
+          {{#if videoUrl}}
+            <video controls playsinline preload="metadata" {{#if posterUrl}}poster="{{posterUrl}}"{{/if}} {{#if mediaUrl}}data-fallback-image="{{mediaUrl}}"{{/if}}><source src="{{videoUrl}}"></video>
+          {{else if mediaUrl}}
+            <img src="{{mediaUrl}}" alt="{{label}}" loading="lazy">
+          {{else}}
+            <div class="media-placeholder"><div class="media-placeholder-window"><div class="placeholder-side"><span class="placeholder-logo">r</span><span>Overview</span><span>Projects</span><span>Team</span><span>Insights</span></div><div class="placeholder-main"><span class="placeholder-greeting">YOUR TEAM, IN FLOW</span><b>{{label}}</b><span class="placeholder-desc">{{description}}</span><div class="placeholder-cards"><i></i><i></i><i></i></div><div class="placeholder-chart"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div></div></div></div>
+          {{/if}}
+          <p class="media-caption">{{description}}</p>
+        </div>
+      {{/each}}
+    </div>
+  </div>
+</section>

@@ -1,0 +1,7 @@
+{{> header}}
+<main id="main" class="archive section-wrap">
+  <header class="archive-header"><p class="eyebrow">Browse the journal</p><h1>{{title}}</h1><p>Find more on the topics you care about.</p></header>
+  <div class="topic-grid">{{#each tags}}<a class="topic-card" href="{{url}}"><span>{{name}}</span><span aria-hidden="true">↗</span></a>{{/each}}</div>
+</main>
+{{> cta}}
+{{> footer}}

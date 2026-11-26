@@ -1,0 +1,7 @@
+{{#if @pagination}}
+  <nav class="pagination" aria-label="Pagination">
+    {{#if @pagination.previousPage}}<a class="page-link page-prev" href="{{@pagination.previousPageUrl}}" rel="prev">← Previous</a>{{/if}}
+    <span>Page {{@pagination.currentPage}} of {{@pagination.totalPages}}</span>
+    {{#if @pagination.nextPage}}<a class="page-link page-next" href="{{@pagination.nextPageUrl}}" rel="next">Next →</a>{{/if}}
+  </nav>
+{{/if}}

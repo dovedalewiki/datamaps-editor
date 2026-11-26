@@ -1,0 +1,8 @@
+{{> header}}
+<main id="main" class="archive section-wrap">
+  <header class="archive-header"><p class="eyebrow">The Reveral journal</p><h1>{{title}}</h1><p>Ideas, stories, and useful notes from our team.</p></header>
+  <div class="insights-grid">{{#each posts}}{{> post-card}}{{/each}}</div>
+  {{> pagination}}
+</main>
+{{> cta}}
+{{> footer}}

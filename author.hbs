@@ -1,0 +1,10 @@
+{{> header}}
+<main id="main" class="archive section-wrap">
+  {{#author}}
+    <header class="archive-header author-header">{{#if avatarImage}}<img class="author-image" src="{{avatarImage.url}}" alt="{{avatarImage.alt}}">{{/if}}<p class="eyebrow">Contributor</p><h1>{{name}}</h1>{{#if description}}<div class="archive-description">{{{description}}}</div>{{/if}}</header>
+  {{/author}}
+  <div class="archive-list archive-list-{{@config.custom.archiveLayout}} archive-grid-{{@config.custom.archiveColumns}}">{{#each posts}}{{> post-card}}{{/each}}</div>
+  {{> pagination}}
+</main>
+{{> cta}}
+{{> footer}}

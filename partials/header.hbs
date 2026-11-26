@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="{{@website.language}}" data-theme="{{@config.custom.colorMode}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{metaTitleRaw}}</title>
+  <meta name="description" content="{{metaDescriptionRaw}}">
+  {{#if metaRobotsRaw}}<meta name="robots" content="{{metaRobotsRaw}}">{{/if}}
+  <link rel="canonical" href="{{canonicalUrl}}">
+  {{{@head}}}
+  {{css "main.css"}}
+  <style>
+    :root {
+      --accent: {{@config.custom.brandColor}};
+      --light-bg: {{@config.custom.lightBackground}};
+      --light-text: {{@config.custom.lightText}};
+      --light-heading: {{@config.custom.lightHeading}};
+      --dark-bg: {{@config.custom.darkBackground}};
+      --dark-text: {{@config.custom.darkText}};
+      --dark-heading: {{@config.custom.darkHeading}};
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="site">
+    <header class="site-header">
+      <div class="header-inner section-wrap">
+        <a class="site-brand" href="{{@website.url}}" aria-label="{{@website.name}} home"><span class="brand-mark">r</span><span>{{@website.name}}</span></a>
+        <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-nav"><span></span><span></span><span></span><span class="visually-hidden">Toggle navigation</span></button>
+        <div class="header-nav" id="main-nav">
+          {{> menu menus.mainMenu}}
+          <a class="header-cta" href="{{@config.custom.primaryActionUrl}}">{{@config.custom.primaryAction}} <span aria-hidden="true">↗</span></a>
+        </div>
+      </div>
+    </header>
